@@ -25,17 +25,27 @@ import (
 // función para comprobar errores (ahorra escritura)
 func chk(e error) {
 	if e != nil {
-		panic(e)
+		//panic(e)
+		fmt.Println("No se ha podido establecer una conexión con el servidor a través del puerto indicado")
+		os.Exit(1)
 	}
 }
 
 func main() {
-	fmt.Println("Entrando en modo cliente...")
+	var puerto = "8080"
 
-	conn, err := net.Dial("tcp", "localhost:1337") // llamamos al servidor
+	if len(os.Args) == 2 {
+		puerto = os.Args[1]
+		fmt.Println("Intentando conectar al puerto: " + puerto)
+	} else {
+		fmt.Println("Intentando conectar al puerto: " + puerto + " (por defecto)")
+	}
+
+	conn, err := net.Dial("tcp", "localhost:"+puerto) // llamamos al servidor
 	chk(err)
 	defer conn.Close() // es importante cerrar la conexión al finalizar
 
+	fmt.Println("Entrando en modo cliente...")
 	fmt.Println("conectado a ", conn.RemoteAddr())
 
 	keyscan := bufio.NewScanner(os.Stdin) // scanner para la entrada estándar (teclado)
