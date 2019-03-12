@@ -2,32 +2,12 @@ package main
 
 import (
 	"bufio"
-	"database/sql"
 	"fmt"
 	"net"
 	"os"
 
-	_ "github.com/go-sql-driver/mysql"
+	"./CAD"
 )
-
-func db() {
-	db, err := sql.Open("mysql", "sds:sds@tcp(185.207.145.237:3306)/sds")
-
-	if err != nil {
-		panic(err.Error())
-	}
-
-	defer db.Close()
-
-	//insert, err := db.Query("INSERT INTO sds.users (username, password, name, surname) VALUES (sds, sds, SDS, SDS);")
-	insert, err := db.Query("INSERT INTO users VALUES ('sds', 'sds', 'SDS', 'SDS');")
-
-	if err != nil {
-		panic(err.Error())
-	}
-
-	defer insert.Close()
-}
 
 // función para comprobar errores (ahorra escritura)
 func chk(e error) {
@@ -38,6 +18,9 @@ func chk(e error) {
 
 func main() {
 	var puerto = "8080"
+
+	var value CAD.Export
+	value.DB()
 
 	if len(os.Args) == 2 {
 		puerto = os.Args[1]
