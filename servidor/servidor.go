@@ -1,25 +1,33 @@
-/*
-
-Este programa demuestra una arquitectura cliente servidor sencilla.
-El cliente envía líneas desde la entrada estandar y el servidor le devuelve un reconomiento de llegada (acknowledge).
-El servidor es concurrente, siendo capaz de manejar múltiples clientes simultáneamente.
-Las entradas se procesan mediante un scanner (bufio).
-
-ejemplos de uso:
-
-go run cnx.go srv
-
-go run cnx.go cli
-
-*/
-
 package main
 
 import (
 	"bufio"
+	"database/sql"
 	"fmt"
 	"net"
+	"os"
+
+	_ "github.com/go-sql-driver/mysql"
 )
+
+func db() {
+	db, err := sql.Open("mysql", "sds:sds@tcp(185.207.145.237:3306)/sds")
+
+	if err != nil {
+		panic(err.Error())
+	}
+
+	defer db.Close()
+
+	//insert, err := db.Query("INSERT INTO sds.users (username, password, name, surname) VALUES (sds, sds, SDS, SDS);")
+	insert, err := db.Query("INSERT INTO users VALUES ('sds', 'sds', 'SDS', 'SDS');")
+
+	if err != nil {
+		panic(err.Error())
+	}
+
+	defer insert.Close()
+}
 
 // función para comprobar errores (ahorra escritura)
 func chk(e error) {
@@ -29,9 +37,16 @@ func chk(e error) {
 }
 
 func main() {
-	fmt.Println("Entrando en modo servidor...")
+	var puerto = "8080"
 
-	ln, err := net.Listen("tcp", "localhost:1337") // escucha en espera de conexión
+	if len(os.Args) == 2 {
+		puerto = os.Args[1]
+		fmt.Println("Servidor escuchando por el puerto: " + puerto)
+	} else {
+		fmt.Println("Servidor escuchando por el puerto: " + puerto + " (por defecto)")
+	}
+
+	ln, err := net.Listen("tcp", "localhost:"+puerto) // escucha en espera de conexión
 	chk(err)
 	defer ln.Close() // nos aseguramos que cerramos las conexiones aunque el programa falle
 
