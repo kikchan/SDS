@@ -1,24 +1,13 @@
-/*
-
-Este programa demuestra una arquitectura cliente servidor sencilla.
-El cliente envía líneas desde la entrada estandar y el servidor le devuelve un reconomiento de llegada (acknowledge).
-El servidor es concurrente, siendo capaz de manejar múltiples clientes simultáneamente.
-Las entradas se procesan mediante un scanner (bufio).
-
-ejemplos de uso:
-
-go run cnx.go srv
-
-go run cnx.go cli
-
-*/
-
 package main
 
 import (
 	"bufio"
 	"fmt"
 	"net"
+	"os"
+
+	cad "./CAD"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 // función para comprobar errores (ahorra escritura)
@@ -29,9 +18,19 @@ func chk(e error) {
 }
 
 func main() {
-	fmt.Println("Entrando en modo servidor...")
+	var puerto = "8080"
 
-	ln, err := net.Listen("tcp", "localhost:1337") // escucha en espera de conexión
+	var value cad.Export
+	value.DB()
+
+	if len(os.Args) == 2 {
+		puerto = os.Args[1]
+		fmt.Println("Servidor escuchando por el puerto: " + puerto)
+	} else {
+		fmt.Println("Servidor escuchando por el puerto: " + puerto + " (por defecto)")
+	}
+
+	ln, err := net.Listen("tcp", "localhost:"+puerto) // escucha en espera de conexión
 	chk(err)
 	defer ln.Close() // nos aseguramos que cerramos las conexiones aunque el programa falle
 
