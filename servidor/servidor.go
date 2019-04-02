@@ -6,11 +6,18 @@ import (
 	"net"
 	"os"
 
-	cad "./CAD"
 	_ "github.com/go-sql-driver/mysql"
 )
 
-// función para comprobar errores (ahorra escritura)
+//Variables globales de conexión a la base de datos
+var DB_IP string = "185.207.145.237"
+var DB_Port string = "3306"
+var DB_Protocol string = "tcp"
+var DB_Name string = "sds"
+var DB_Username string = "sds"
+var DB_Password string = "sds"
+
+//función para comprobar errores (ahorra escritura)
 func chk(e error) {
 	if e != nil {
 		panic(e)
@@ -20,8 +27,8 @@ func chk(e error) {
 func main() {
 	var puerto = "8080"
 
-	var value cad.Export
-	value.DB()
+	deleteUser("kiril")
+	createUser("kiril", "123456", "Kiril", "Gaydarov")
 
 	if len(os.Args) == 2 {
 		puerto = os.Args[1]
@@ -30,28 +37,28 @@ func main() {
 		fmt.Println("Servidor escuchando por el puerto: " + puerto + " (por defecto)")
 	}
 
-	ln, err := net.Listen("tcp", "localhost:"+puerto) // escucha en espera de conexión
+	ln, err := net.Listen("tcp", "localhost:"+puerto) //escucha en espera de conexión
 	chk(err)
-	defer ln.Close() // nos aseguramos que cerramos las conexiones aunque el programa falle
+	defer ln.Close() //nos aseguramos que cerramos las conexiones aunque el programa falle
 
-	for { // búcle infinito, se sale con ctrl+c
-		conn, err := ln.Accept() // para cada nueva petición de conexión
+	for { //búcle infinito, se sale con ctrl+c
+		conn, err := ln.Accept() //para cada nueva petición de conexión
 		chk(err)
-		go func() { // lanzamos un cierre (lambda, función anónima) en concurrencia
+		go func() { //lanzamos un cierre (lambda, función anónima) en concurrencia
 
-			_, port, err := net.SplitHostPort(conn.RemoteAddr().String()) // obtenemos el puerto remoto para identificar al cliente (decorativo)
+			_, port, err := net.SplitHostPort(conn.RemoteAddr().String()) //obtenemos el puerto remoto para identificar al cliente (decorativo)
 			chk(err)
 
 			fmt.Println("conexión: ", conn.LocalAddr(), " <--> ", conn.RemoteAddr())
 
-			scanner := bufio.NewScanner(conn) // el scanner nos permite trabajar con la entrada línea a línea (por defecto)
+			scanner := bufio.NewScanner(conn) //el scanner nos permite trabajar con la entrada línea a línea (por defecto)
 
-			for scanner.Scan() { // escaneamos la conexión
-				fmt.Println("cliente[", port, "]: ", scanner.Text()) // mostramos el mensaje del cliente
-				fmt.Fprintln(conn, "ack: ", scanner.Text())          // enviamos ack al cliente
+			for scanner.Scan() { //escaneamos la conexión
+				fmt.Println("cliente[", port, "]: ", scanner.Text()) //mostramos el mensaje del cliente
+				fmt.Fprintln(conn, "ack: ", scanner.Text())          //enviamos ack al cliente
 			}
 
-			conn.Close() // cerramos al finalizar el cliente (EOF se envía con ctrl+d o ctrl+z según el sistema)
+			conn.Close() //cerramos al finalizar el cliente (EOF se envía con ctrl+d o ctrl+z según el sistema)
 			fmt.Println("cierre[", port, "]")
 		}()
 	}
