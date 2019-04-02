@@ -5,9 +5,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-
-	cad "./CAD"
-	_ "github.com/go-sql-driver/mysql"
 )
 
 // función para comprobar errores (ahorra escritura)
@@ -19,9 +16,6 @@ func chk(e error) {
 
 func main() {
 	var puerto = "8080"
-
-	var value cad.Export
-	value.DB()
 
 	if len(os.Args) == 2 {
 		puerto = os.Args[1]
