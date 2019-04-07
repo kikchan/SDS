@@ -2,7 +2,7 @@ package main
 
 import (
 	"database/sql"
-	"time"
+	"strconv"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -14,7 +14,7 @@ import (
 	   -2: Error executing query
 	   -3: Error connecting to DB
 */
-func createCard(pan int, ccv int, expiry time.Date()) (int, string) {
+func createCard(pan string, ccv string, month int, year int, owner string) (int, string) {
 	var msg string
 	var code int
 
@@ -26,13 +26,13 @@ func createCard(pan int, ccv int, expiry time.Date()) (int, string) {
 
 	defer db.Close()
 
-	insert, err := db.Query("INSERT INTO users VALUES ('" + username + "', '" + password + "', '" + name + "', '" + surname + "', '" + email + "');")
+	insert, err := db.Query("INSERT INTO cards(pan, ccv, expiry, `owner`) VALUES ('" + pan + "', '" + ccv + "', '" + strconv.Itoa(year) + "/" + strconv.Itoa(month) + "/00', '" + owner + "');")
 	if err != nil {
 		code = -2
 		msg = err.Error()
 	} else {
 		code = 1
-		msg = "User created: " + username + ", " + name + " " + surname
+		msg = "Added new card(" + pan + ") for user: " + owner
 	}
 
 	defer insert.Close()
@@ -48,7 +48,7 @@ func createCard(pan int, ccv int, expiry time.Date()) (int, string) {
 	   -2: Error executing query
 	   -3: Error connecting to DB
 */
-func findUser(username string) (int, string) {
+func findCard(username string) (int, string) {
 	var msg string
 	var code int
 
@@ -90,7 +90,7 @@ func findUser(username string) (int, string) {
 	   -2: Error executing query
 	   -3: Error connecting to DB
 */
-func updateUser(username string, password string, email string) (int, string) {
+func updateCard(username string, password string, email string) (int, string) {
 	var msg string
 	var code int
 
@@ -123,7 +123,7 @@ func updateUser(username string, password string, email string) (int, string) {
 	   -2: Error executing query
 	   -3: Error connecting to DB
 */
-func deleteUser(username string) (int, string) {
+func deleteCard(username string) (int, string) {
 	var msg string
 	var code int
 

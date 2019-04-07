@@ -31,7 +31,7 @@ func main() {
 	var msg string
 
 	/*
-		CADUser function calls test
+		DALUsers function calls test
 	*/
 	code, msg = createUser("kiril", "123456", "Kiril", "Gaydarov", "kvg1@alu.ua.es")
 	fmt.Println("(code: " + strconv.Itoa(code) + ", msg: " + msg + ")")
@@ -51,7 +51,16 @@ func main() {
 	code, msg = deleteUser("kiril")
 	fmt.Println("(code: " + strconv.Itoa(code) + ", msg: " + msg + ")")
 	/*
-		CADUser function calls test END
+		DALUsers function calls test END
+	*/
+
+	/*
+		DALCards function calls test
+	*/
+	code, msg = createCard("123456879832158", "111", 05, 2030, "jose")
+	fmt.Println("(code: " + strconv.Itoa(code) + ", msg: " + msg + ")")
+	/*
+		DALCards function calls test END
 	*/
 
 	if len(os.Args) == 2 {
