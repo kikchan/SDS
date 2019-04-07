@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strconv"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -25,44 +26,74 @@ func chk(e error) {
 }
 
 func main() {
-	var puerto = "8080"
+	var port = "8080"
+	var code int
+	var msg string
 
-	fmt.Println(createUser("kiril", "123456", "Kiril", "Gaydarov", "kvg1@alu.ua.es"))
-	fmt.Println(findUser("kiril"))
-	fmt.Println(updateUser("kiril", "654321", "kiril_gaydarov@gmail.com"))
-	fmt.Println(findUser("kiril"))
-	fmt.Println(deleteUser("kiril"))
+	/*
+		CADUser function calls test
+	*/
+	code, msg = createUser("kiril", "123456", "Kiril", "Gaydarov", "kvg1@alu.ua.es")
+	fmt.Println("(code: " + strconv.Itoa(code) + ", msg: " + msg + ")")
+
+	code, msg = findUser("kiril")
+	fmt.Println("(code: " + strconv.Itoa(code) + ", msg: " + msg + ")")
+
+	code, msg = findUser("jose")
+	fmt.Println("(code: " + strconv.Itoa(code) + ", msg: " + msg + ")")
+
+	code, msg = updateUser("kiril", "654321", "kiril_gaydarov@gmail.com")
+	fmt.Println("(code: " + strconv.Itoa(code) + ", msg: " + msg + ")")
+
+	code, msg = findUser("kiril")
+	fmt.Println("(code: " + strconv.Itoa(code) + ", msg: " + msg + ")")
+
+	code, msg = deleteUser("kiril")
+	fmt.Println("(code: " + strconv.Itoa(code) + ", msg: " + msg + ")")
+	/*
+		CADUser function calls test END
+	*/
 
 	if len(os.Args) == 2 {
-		puerto = os.Args[1]
-		fmt.Println("Servidor escuchando por el puerto: " + puerto)
+		port = os.Args[1]
+		fmt.Println("Server awaiting connections from port: " + port)
 	} else {
-		fmt.Println("Servidor escuchando por el puerto: " + puerto + " (por defecto)")
+		fmt.Println("Server awaiting connections from port: " + port + " (default)")
 	}
 
-	ln, err := net.Listen("tcp", "localhost:"+puerto) //escucha en espera de conexión
+	//Server is in listening mode
+	ln, err := net.Listen("tcp", "localhost:"+port)
 	chk(err)
-	defer ln.Close() //nos aseguramos que cerramos las conexiones aunque el programa falle
 
-	for { //búcle infinito, se sale con ctrl+c
-		conn, err := ln.Accept() //para cada nueva petición de conexión
+	defer ln.Close()
+
+	//Infinite loop
+	for {
+		//Accept every single user request
+		conn, err := ln.Accept()
 		chk(err)
-		go func() { //lanzamos un cierre (lambda, función anónima) en concurrencia
 
-			_, port, err := net.SplitHostPort(conn.RemoteAddr().String()) //obtenemos el puerto remoto para identificar al cliente (decorativo)
+		//Launch a concurrent lambda function
+		go func() {
+			//Gets the user's port
+			_, port, err := net.SplitHostPort(conn.RemoteAddr().String())
 			chk(err)
 
-			fmt.Println("conexión: ", conn.LocalAddr(), " <--> ", conn.RemoteAddr())
+			fmt.Println("Connection: ", conn.LocalAddr(), " <--> ", conn.RemoteAddr())
 
-			scanner := bufio.NewScanner(conn) //el scanner nos permite trabajar con la entrada línea a línea (por defecto)
+			scanner := bufio.NewScanner(conn)
 
-			for scanner.Scan() { //escaneamos la conexión
-				fmt.Println("cliente[", port, "]: ", scanner.Text()) //mostramos el mensaje del cliente
-				fmt.Fprintln(conn, "ack: ", scanner.Text())          //enviamos ack al cliente
+			//Scans the connection and reads the message
+			for scanner.Scan() {
+				//Print the user's message
+				fmt.Println("Client[", port, "]: ", scanner.Text())
+
+				//Send "ACK" to client
+				fmt.Fprintln(conn, "ack: ", scanner.Text())
 			}
 
-			conn.Close() //cerramos al finalizar el cliente (EOF se envía con ctrl+d o ctrl+z según el sistema)
-			fmt.Println("cierre[", port, "]")
+			conn.Close()
+			fmt.Println("Closed[", port, "]")
 		}()
 	}
 }
