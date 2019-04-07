@@ -29,6 +29,8 @@ func main() {
 
 	fmt.Println(createUser("kiril", "123456", "Kiril", "Gaydarov", "kvg1@alu.ua.es"))
 	fmt.Println(findUser("kiril"))
+	fmt.Println(updateUser("kiril", "654321", "kiril_gaydarov@gmail.com"))
+	fmt.Println(findUser("kiril"))
 	fmt.Println(deleteUser("kiril"))
 
 	if len(os.Args) == 2 {
