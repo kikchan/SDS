@@ -6,8 +6,8 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-//Función para crear un usuario
-func createUser(username string, password string, name string, surname string) string {
+//CREATE
+func createUser(username string, password string, name string, surname string, email string) string {
 	db, err := sql.Open("mysql", DB_Username+":"+DB_Password+"@"+DB_Protocol+"("+DB_IP+":"+DB_Port+")/"+DB_Name)
 
 	if err != nil {
@@ -16,8 +16,7 @@ func createUser(username string, password string, name string, surname string) s
 
 	defer db.Close()
 
-	//insert, err := db.Query("INSERT INTO sds.users (username, password, name, surname) VALUES (sds, sds, SDS, SDS);")
-	insert, err := db.Query("INSERT INTO users VALUES ('" + username + "', '" + password + "', '" + name + "', '" + surname + "');")
+	insert, err := db.Query("INSERT INTO users VALUES ('" + username + "', '" + password + "', '" + name + "', '" + surname + "', '" + email + "');")
 
 	if err != nil {
 		panic(err.Error())
@@ -25,27 +24,44 @@ func createUser(username string, password string, name string, surname string) s
 
 	defer insert.Close()
 
-	return "Usuario creado: {" + username + ", " + name + " " + surname + "}"
+	return "Usuario creado: " + username + ", " + name + " " + surname
 }
 
-//Función para borrar un usuario
-func deleteUser(username string) string {
-	db, err := sql.Open("mysql", "sds:sds@tcp(185.207.145.237:3306)/sds")
-
-	if err != nil {
-		panic(err.Error())
-	}
+//READ
+func findUser(username string) (string, string, string, string, string, string) {
+	db, err := sql.Open("mysql", DB_Username+":"+DB_Password+"@"+DB_Protocol+"("+DB_IP+":"+DB_Port+")/"+DB_Name)
+	chk(err)
 
 	defer db.Close()
 
-	//insert, err := db.Query("INSERT INTO sds.users (username, password, name, surname) VALUES (sds, sds, SDS, SDS);")
-	insert, err := db.Query("DELETE FROM users WHERE username='" + username + "';")
+	read, err := db.Query("SELECT * FROM users WHERE username='" + username + "';")
+	chk(err)
 
-	if err != nil {
-		panic(err.Error())
+	defer read.Close()
+
+	if read.Next() {
+		var a, b, c, d, e string
+
+		err = read.Scan(&a, &b, &c, &d, &e)
+		chk(err)
+
+		return "Usuario encontrado: ", a, b, c, d, e
+	} else {
+		return "No se ha encontrado el usuario", "", "", "", "", ""
 	}
+}
 
-	defer insert.Close()
+//DELETE
+func deleteUser(username string) string {
+	db, err := sql.Open("mysql", DB_Username+":"+DB_Password+"@"+DB_Protocol+"("+DB_IP+":"+DB_Port+")/"+DB_Name)
+	chk(err)
 
-	return "Usuario borrado: {" + username + "}"
+	defer db.Close()
+
+	delete, err := db.Query("DELETE FROM users WHERE username='" + username + "';")
+	chk(err)
+
+	defer delete.Close()
+
+	return "Usuario borrado: " + username
 }

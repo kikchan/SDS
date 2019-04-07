@@ -9,7 +9,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-//Variables globales de conexión a la base de datos
+//Database connection variables
 var DB_IP string = "185.207.145.237"
 var DB_Port string = "3306"
 var DB_Protocol string = "tcp"
@@ -17,7 +17,7 @@ var DB_Name string = "sds"
 var DB_Username string = "sds"
 var DB_Password string = "sds"
 
-//función para comprobar errores (ahorra escritura)
+//Error check function
 func chk(e error) {
 	if e != nil {
 		panic(e)
@@ -27,8 +27,9 @@ func chk(e error) {
 func main() {
 	var puerto = "8080"
 
-	deleteUser("kiril")
-	createUser("kiril", "123456", "Kiril", "Gaydarov")
+	fmt.Println(createUser("kiril", "123456", "Kiril", "Gaydarov", "kvg1@alu.ua.es"))
+	fmt.Println(findUser("kiril"))
+	fmt.Println(deleteUser("kiril"))
 
 	if len(os.Args) == 2 {
 		puerto = os.Args[1]
