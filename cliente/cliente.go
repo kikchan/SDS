@@ -25,6 +25,8 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"encoding/hex"
+	//"net/http"
+	//"crypto/tls"
 	"io"
 )
 
@@ -37,6 +39,17 @@ func chk(e error) {
 	}
 }
 
+// ejemplo de tipo para un usuario
+/*type user struct {
+	username string            // nombre de usuario
+	password string		   // Contraseña
+	name string			   // Nombre
+	surname string		   // Apelllidos
+	email string		   // email (quitar)
+	Hash []byte            // hash de la contraseña
+	Salt []byte            // sal para la contraseña
+	Data map[string]string // datos adicionales del usuario
+}*/
 
 func createHash(key string) string {
 	hasher := md5.New()
@@ -174,4 +187,16 @@ func main() {
 		netscan.Scan()                             // escaneamos la conexión
 		fmt.Println("servidor: ", netscan.Text()) // mostramos mensaje desde el servidor
 	}
+
+	/*
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+
+	r, err := client.PostForm("https://localhost:10443", data) // enviamos por POST
+	chk(err)
+	io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
+	fmt.Println()
+	*/
 }
