@@ -20,6 +20,12 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"crypto/md5"
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
+	"encoding/hex"
+	"io"
 )
 
 // función para comprobar errores (ahorra escritura)
@@ -29,6 +35,116 @@ func chk(e error) {
 		fmt.Println("No se ha podido establecer una conexión con el servidor a través del puerto indicado")
 		os.Exit(1)
 	}
+}
+
+
+func createHash(key string) string {
+	hasher := md5.New()
+	hasher.Write([]byte(key))
+	return hex.EncodeToString(hasher.Sum(nil))
+}
+
+func encrypt(data []byte, passphrase string) []byte {
+	block, _ := aes.NewCipher([]byte(createHash(passphrase)))
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		panic(err.Error())
+	}
+	nonce := make([]byte, gcm.NonceSize())
+	if _, err = io.ReadFull(rand.Reader, nonce); err != nil {
+		panic(err.Error())
+	}
+	ciphertext := gcm.Seal(nonce, nonce, data, nil)
+	return ciphertext
+}
+
+func decrypt(data []byte, passphrase string) []byte {
+	key := []byte(createHash(passphrase))
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		panic(err.Error())
+	}
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		panic(err.Error())
+	}
+	nonceSize := gcm.NonceSize()
+	nonce, ciphertext := data[:nonceSize], data[nonceSize:]
+	plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)
+	if err != nil {
+		panic(err.Error())
+	}
+	return plaintext
+}
+
+func menu(){
+	menu := 
+	`
+		Bienvenido
+		[ 1 ] Login
+		[ 2 ] Register
+		¿Qué prefieres?
+
+	`
+
+	fmt.Print(menu)
+
+	var eleccion int //Declarar variable y tipo antes de escanear, esto es obligatorio
+	fmt.Scanln(&eleccion)
+
+	switch eleccion{
+		case 1:
+			fmt.Println("Iniciar sesión:")
+			login()
+		case 2:
+			fmt.Println("Registrar usuario:")
+			register()
+		default:
+			fmt.Println("No prefieres ninguno de ellos")
+	}
+}
+
+func login(){
+	var username string
+	var password string
+
+	fmt.Printf("Insert username: ")
+	fmt.Scanln(&username)
+
+	fmt.Printf("Insert password: ")
+	fmt.Scanln(&password)
+
+	ciphertext := encrypt([]byte(username), password)
+	fmt.Printf("Encrypted: %x\n", ciphertext)
+	plaintext := decrypt(ciphertext, password)
+	fmt.Printf("Decrypted: %s\n", plaintext)
+
+}
+
+func register(){
+	var username string
+	var surname string
+	var password string
+	var creditCard string	
+	
+	fmt.Println("Insert username:")
+	fmt.Scanln(&username)
+	
+	fmt.Println("Insert surname:")
+	fmt.Scanln(&surname)
+
+	fmt.Println("Insert password:")
+	fmt.Scanln(&password)
+	
+	fmt.Println("Insert credit card:")
+	fmt.Scanln(&creditCard)
+
+
+	ciphertext := encrypt([]byte(username), password)
+	fmt.Printf("Encrypted: %x\n", ciphertext)
+	plaintext := decrypt(ciphertext, password)
+	fmt.Printf("Decrypted: %s\n", plaintext)
+
 }
 
 func main() {
@@ -48,12 +164,14 @@ func main() {
 	fmt.Println("Entrando en modo cliente...")
 	fmt.Println("conectado a ", conn.RemoteAddr())
 
+	menu()
+
 	keyscan := bufio.NewScanner(os.Stdin) // scanner para la entrada estándar (teclado)
 	netscan := bufio.NewScanner(conn)     // scanner para la conexión (datos desde el servidor)
 
 	for keyscan.Scan() { // escaneamos la entrada
 		fmt.Fprintln(conn, keyscan.Text())         // enviamos la entrada al servidor
 		netscan.Scan()                             // escaneamos la conexión
-		fmt.Println("servidor: " + netscan.Text()) // mostramos mensaje desde el servidor
+		fmt.Println("servidor: ", netscan.Text()) // mostramos mensaje desde el servidor
 	}
 }
