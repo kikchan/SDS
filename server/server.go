@@ -115,8 +115,16 @@ func main() {
 	code, msg = createCard("123456879832158", "111", 05, 2030, "jose")
 	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
 
-	//Find the card
+	//Find the card by PAN
 	code, msg = findCardByPAN("jose", "123456879832158")
+	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
+
+	//Find the card by ID
+	code, msg = findCardByID("jose", 68)
+	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
+
+	//Find a non-existing card
+	code, msg = findCardByID("jose", 1)
 	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
 	/*
 		DALCards function calls test END
