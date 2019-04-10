@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"strconv"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -56,99 +55,9 @@ func decrypt(data []byte, passphrase string) []byte {
 
 func main() {
 	var port = "8080"
-	var code int
-	var msg string
 
-	/*
-		DALUsers function calls test
-	*/
-	//Create a user
-	code, msg = createUser("kiril", "123456", "Kiril", "Gaydarov", "kvg1@alu.ua.es")
-	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
-
-	//Duplicate same user, throws an error
-	code, msg = createUser("kiril", "123456", "Kiril", "Gaydarov", "kvg1@alu.ua.es")
-	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
-
-	//Find the user that was just created
-	code, msg = findUser("kiril")
-	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
-
-	//Find a user that doesn't exist
-	code, msg = findUser("juan")
-	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
-
-	//Find another user that exists
-	code, msg = findUser("jose")
-	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
-
-	//Update an existing user
-	code, msg = updateUser("kiril", "654321", "kiril_gaydarov@gmail.com")
-	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
-
-	//Update a non existing user
-	code, msg = updateUser("kiril123", "654321", "kiril_gaydarov@gmail.com")
-	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
-
-	code, msg = findUser("kiril")
-	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
-
-	//Delete an existing user
-	code, msg = deleteUser("kiril")
-	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
-
-	//Delete a non-existing user
-	code, msg = deleteUser("kiril")
-	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
-	/*
-		DALUsers function calls test END
-	*/
-
-	/*
-		DALCards function calls test
-	*/
-	//Create a card
-	code, msg = createCard("123456879832158", "111", 05, 2030, "jose")
-	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
-
-	//Duplicate the previous card, should thrown an error
-	code, msg = createCard("123456879832158", "111", 05, 2030, "jose")
-	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
-
-	//Find the card by PAN
-	code, msg = findCardByPAN("jose", "123456879832158")
-	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
-
-	//Find the card by ID
-	code, msg = findCardByID("jose", 68)
-	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
-
-	//Find a non-existing card
-	code, msg = findCardByID("jose", 1)
-	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
-
-	//Find all cards for user "jose"
-	code, msg = getUserCards("jose")
-	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
-
-	//Update an existing card
-	code, msg = updateCard("123456879832158", "155", 04, 2019, "jose", "123456879832158")
-	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
-
-	//Update a non-existing card
-	code, msg = updateCard("56469547632115", "155", 04, 2019, "jose", "15")
-	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
-
-	//Delete an existing card
-	code, msg = deleteCard("123456879832158", "jose")
-	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
-
-	//Update a non-existing card
-	code, msg = deleteCard("0123", "jose")
-	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
-	/*
-		DALCards function calls test END
-	*/
+	DALUsersTest()
+	DALCardsTest()
 
 	if len(os.Args) == 2 {
 		port = os.Args[1]

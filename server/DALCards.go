@@ -162,35 +162,39 @@ func getUserCards(owner string) (int, string) {
 
 	defer db.Close()
 
-	var query = "SELECT * FROM cards WHERE owner='" + owner + "';"
-	writeLog(owner, "[Function]: getUserCards ## [Query]: "+query)
+	code, msg = findUser(owner)
 
-	read, err := db.Query(query)
-	if err != nil {
-		code = -2
-		msg = err.Error()
-	}
+	if code == 1 {
+		var query = "SELECT * FROM cards WHERE owner='" + owner + "';"
+		writeLog(owner, "[Function]: getUserCards ## [Query]: "+query)
 
-	defer read.Close()
-
-	for read.Next() {
-		var a, b, c, d, e string
-
-		err = read.Scan(&a, &b, &c, &d, &e)
-
-		code = 1
-		cards = append(cards, "["+a+" "+b+" "+c+" "+d+" "+e+"]")
-	}
-
-	if len(cards) != 0 {
-		code = 1
-
-		for i := 0; i < len(cards); i++ {
-			msg += cards[i]
+		read, err := db.Query(query)
+		if err != nil {
+			code = -2
+			msg = err.Error()
 		}
-	} else {
-		code = -1
-		msg = "The user has no cards"
+
+		defer read.Close()
+
+		for read.Next() {
+			var a, b, c, d, e string
+
+			err = read.Scan(&a, &b, &c, &d, &e)
+
+			code = 1
+			cards = append(cards, "["+a+" "+b+" "+c+" "+d+" "+e+"]")
+		}
+
+		if len(cards) != 0 {
+			code = 1
+
+			for i := 0; i < len(cards); i++ {
+				msg += cards[i]
+			}
+		} else {
+			code = -1
+			msg = "The user has no cards"
+		}
 	}
 
 	writeLog(owner, "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
@@ -265,25 +269,31 @@ func deleteCard(pan string, owner string) (int, string) {
 
 	defer db.Close()
 
-	code, msg = findCardByPAN(owner, pan)
-
-	var query = "DELETE FROM cards WHERE owner='" + owner + "' AND pan='" + pan + "';"
-	writeLog(owner, "[Function]: deleteCard ## [Query]: "+query)
+	code, msg = findUser(owner)
 
 	if code == 1 {
-		delete, err := db.Query(query)
-		if err != nil {
-			code = -2
-			msg = err.Error()
-		} else {
-			code = 1
-			msg = "Card deleted: " + pan
+		code, msg = findCardByPAN(owner, pan)
 
-			defer delete.Close()
+		if code == 1 {
+			var query = "DELETE FROM cards WHERE owner='" + owner + "' AND pan='" + pan + "';"
+			writeLog(owner, "[Function]: deleteCard ## [Query]: "+query)
+
+			if code == 1 {
+				delete, err := db.Query(query)
+				if err != nil {
+					code = -2
+					msg = err.Error()
+				} else {
+					code = 1
+					msg = "Card deleted: " + pan
+
+					defer delete.Close()
+				}
+			} else {
+				code = -1
+				msg = "Invalid card"
+			}
 		}
-	} else {
-		code = -1
-		msg = "Invalid card"
 	}
 
 	writeLog(owner, "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
