@@ -205,7 +205,7 @@ func getUserCards(owner string) (int, string) {
 	   -2: Error executing query
 	   -3: Error connecting to DB
 */
-func updateCard(username string, password string, email string) (int, string) {
+func updateCard(pan string, ccv string, month int, year int, owner string) (int, string) {
 	var msg string
 	var code int
 
@@ -217,16 +217,29 @@ func updateCard(username string, password string, email string) (int, string) {
 
 	defer db.Close()
 
-	update, err := db.Query("UPDATE users SET password='" + password + "', email='" + email + "' WHERE username='" + username + "';")
-	if err != nil {
-		code = -2
-		msg = err.Error()
+	code, msg = findCardByPAN(owner, pan)
+
+	if code == 1 {
+		var query = "UPDATE cards SET pan='" + pan + "', ccv='" + ccv + "', expiry='" + strconv.Itoa(year) + "/" +
+			strconv.Itoa(month) + "/00' WHERE owner='" + owner + "' AND pan='" + pan + "';"
+		writeLog(owner, "[Query]: "+query)
+
+		update, err := db.Query(query)
+		if err != nil {
+			code = -2
+			msg = err.Error()
+		} else {
+			code = 1
+			msg = "Card modified: " + pan
+		}
+
+		defer update.Close()
 	} else {
-		code = 1
-		msg = "User modified: " + username
+		code = -2
+		msg = "Invalid card: " + pan
 	}
 
-	defer update.Close()
+	writeLog(owner, "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
 
 	return code, msg
 }

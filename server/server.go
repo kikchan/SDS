@@ -130,6 +130,14 @@ func main() {
 	//Find all cards for user "jose"
 	code, msg = getUserCards("jose")
 	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
+
+	//Update an existing card
+	code, msg = updateCard("123456879832158", "155", 04, 2019, "jose")
+	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
+
+	//Update a non-existing card
+	code, msg = updateCard("15", "155", 04, 2019, "jose")
+	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
 	/*
 		DALCards function calls test END
 	*/
