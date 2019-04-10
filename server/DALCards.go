@@ -49,11 +49,11 @@ func createCard(pan string, ccv string, month int, year int, owner string) (int,
 	READ
 	Returns:
 		1: OK
-	   -1: User doesn't exist
+	   -1: Card doesn't exist
 	   -2: Error executing query
 	   -3: Error connecting to DB
 */
-func findCard(username string) (int, string) {
+func findCardByPAN(owner string, pan string) (int, string) {
 	var msg string
 	var code int
 
@@ -65,7 +65,10 @@ func findCard(username string) (int, string) {
 
 	defer db.Close()
 
-	read, err := db.Query("SELECT * FROM users WHERE username='" + username + "';")
+	var query = "SELECT * FROM cards WHERE owner='" + owner + "' AND pan='" + pan + "';"
+	writeLog(owner, "[Query]: "+query)
+
+	read, err := db.Query(query)
 	if err != nil {
 		code = -2
 		msg = err.Error()
@@ -82,8 +85,10 @@ func findCard(username string) (int, string) {
 		msg = a + " " + b + " " + c + " " + d + " " + e + " "
 	} else {
 		code = -1
-		msg = "User \"" + username + "\" doesnt exist"
+		msg = "Invalid card"
 	}
+
+	writeLog(owner, "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
 
 	return code, msg
 }

@@ -107,7 +107,16 @@ func main() {
 	/*
 		DALCards function calls test
 	*/
+	//Create a card
 	code, msg = createCard("123456879832158", "111", 05, 2030, "jose")
+	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
+
+	//Duplicate the previous card, should thrown an error
+	code, msg = createCard("123456879832158", "111", 05, 2030, "jose")
+	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
+
+	//Find the card
+	code, msg = findCardByPAN("jose", "123456879832158")
 	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
 	/*
 		DALCards function calls test END
