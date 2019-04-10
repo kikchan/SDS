@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"strconv"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -25,7 +26,11 @@ func createUser(username string, password string, name string, surname string, e
 
 	defer db.Close()
 
-	insert, err := db.Query("INSERT INTO users VALUES ('" + username + "', '" + password + "', '" + name + "', '" + surname + "', '" + email + "');")
+	var query = "INSERT INTO users VALUES ('" + username + "', '" + password + "', '" + name + "', '" + surname + "', '" + email + "');"
+	writeLog("user: " + username + " ## query: " + query)
+
+	insert, err := db.Query(query)
+
 	if err != nil {
 		code = -2
 		msg = "Invalid username"
@@ -35,6 +40,8 @@ func createUser(username string, password string, name string, surname string, e
 
 		defer insert.Close()
 	}
+
+	writeLog("user: " + username + " code: " + strconv.Itoa(code) + " ## msg: " + msg)
 
 	return code, msg
 }
