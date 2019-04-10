@@ -29,13 +29,13 @@ func createCard(pan string, ccv string, month int, year int, owner string) (int,
 	insert, err := db.Query("INSERT INTO cards(pan, ccv, expiry, `owner`) VALUES ('" + pan + "', '" + ccv + "', '" + strconv.Itoa(year) + "/" + strconv.Itoa(month) + "/00', '" + owner + "');")
 	if err != nil {
 		code = -2
-		msg = err.Error()
+		msg = "Invalid card"
 	} else {
 		code = 1
 		msg = "Added new card(" + pan + ") for user: " + owner
-	}
 
-	defer insert.Close()
+		defer insert.Close()
+	}
 
 	return code, msg
 }

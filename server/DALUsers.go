@@ -28,13 +28,13 @@ func createUser(username string, password string, name string, surname string, e
 	insert, err := db.Query("INSERT INTO users VALUES ('" + username + "', '" + password + "', '" + name + "', '" + surname + "', '" + email + "');")
 	if err != nil {
 		code = -2
-		msg = err.Error()
+		msg = "Invalid username"
 	} else {
 		code = 1
 		msg = "User created: " + username + ", " + name + " " + surname
-	}
 
-	defer insert.Close()
+		defer insert.Close()
+	}
 
 	return code, msg
 }
@@ -76,7 +76,7 @@ func findUser(username string) (int, string) {
 		msg = a + " " + b + " " + c + " " + d + " " + e + " "
 	} else {
 		code = -1
-		msg = "User \"" + username + "\" doesnt exist"
+		msg = "Invalid username"
 	}
 
 	return code, msg
@@ -101,16 +101,23 @@ func updateUser(username string, password string, email string) (int, string) {
 
 	defer db.Close()
 
-	update, err := db.Query("UPDATE users SET password='" + password + "', email='" + email + "' WHERE username='" + username + "';")
-	if err != nil {
-		code = -2
-		msg = err.Error()
-	} else {
-		code = 1
-		msg = "User modified: " + username
-	}
+	code, msg = findUser(username)
 
-	defer update.Close()
+	if code == 1 {
+		update, err := db.Query("UPDATE users SET password='" + password + "', email='" + email + "' WHERE username='" + username + "';")
+		if err != nil {
+			code = -2
+			msg = err.Error()
+		} else {
+			code = 1
+			msg = "User modified: " + username
+
+			defer update.Close()
+		}
+	} else {
+		code = -2
+		msg = "Invalid username"
+	}
 
 	return code, msg
 }
@@ -134,16 +141,23 @@ func deleteUser(username string) (int, string) {
 
 	defer db.Close()
 
-	delete, err := db.Query("DELETE FROM users WHERE username='" + username + "';")
-	if err != nil {
-		code = -2
-		msg = err.Error()
-	} else {
-		code = 1
-		msg = "User deleted: " + username
-	}
+	code, msg = findUser(username)
 
-	defer delete.Close()
+	if code == 1 {
+		delete, err := db.Query("DELETE FROM users WHERE username='" + username + "';")
+		if err != nil {
+			code = -2
+			msg = err.Error()
+		} else {
+			code = 1
+			msg = "User deleted: " + username
+
+			defer delete.Close()
+		}
+	} else {
+		code = -2
+		msg = "User \"" + username + "\" doesn't exist"
+	}
 
 	return code, msg
 }

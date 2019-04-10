@@ -62,23 +62,44 @@ func main() {
 	/*
 		DALUsers function calls test
 	*/
+	//Create a user
 	code, msg = createUser("kiril", "123456", "Kiril", "Gaydarov", "kvg1@alu.ua.es")
-	fmt.Println("(code: " + strconv.Itoa(code) + ", msg: " + msg + ")")
+	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
 
+	//Duplicate same user, throws an error
+	code, msg = createUser("kiril", "123456", "Kiril", "Gaydarov", "kvg1@alu.ua.es")
+	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
+
+	//Find the user that was just created
 	code, msg = findUser("kiril")
-	fmt.Println("(code: " + strconv.Itoa(code) + ", msg: " + msg + ")")
+	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
 
+	//Find a user that doesn't exist
+	code, msg = findUser("juan")
+	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
+
+	//Find another user that exists
 	code, msg = findUser("jose")
-	fmt.Println("(code: " + strconv.Itoa(code) + ", msg: " + msg + ")")
+	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
 
+	//Update an existing user
 	code, msg = updateUser("kiril", "654321", "kiril_gaydarov@gmail.com")
-	fmt.Println("(code: " + strconv.Itoa(code) + ", msg: " + msg + ")")
+	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
+
+	//Update a non existing user
+	code, msg = updateUser("kiril123", "654321", "kiril_gaydarov@gmail.com")
+	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
 
 	code, msg = findUser("kiril")
-	fmt.Println("(code: " + strconv.Itoa(code) + ", msg: " + msg + ")")
+	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
 
+	//Delete an existing user
 	code, msg = deleteUser("kiril")
-	fmt.Println("(code: " + strconv.Itoa(code) + ", msg: " + msg + ")")
+	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
+
+	//Delete a non-existing user
+	code, msg = deleteUser("kiril")
+	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
 	/*
 		DALUsers function calls test END
 	*/
@@ -87,7 +108,7 @@ func main() {
 		DALCards function calls test
 	*/
 	code, msg = createCard("123456879832158", "111", 05, 2030, "jose")
-	fmt.Println("(code: " + strconv.Itoa(code) + ", msg: " + msg + ")")
+	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
 	/*
 		DALCards function calls test END
 	*/
