@@ -27,7 +27,7 @@ func createUser(username string, password string, name string, surname string, e
 	defer db.Close()
 
 	var query = "INSERT INTO users VALUES ('" + username + "', '" + password + "', '" + name + "', '" + surname + "', '" + email + "');"
-	writeLog("user: " + username + " ## query: " + query)
+	writeLog(username, "[Query]: "+query)
 
 	insert, err := db.Query(query)
 
@@ -41,7 +41,7 @@ func createUser(username string, password string, name string, surname string, e
 		defer insert.Close()
 	}
 
-	writeLog("user: " + username + " code: " + strconv.Itoa(code) + " ## msg: " + msg)
+	writeLog(username, "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
 
 	return code, msg
 }
@@ -66,7 +66,10 @@ func findUser(username string) (int, string) {
 
 	defer db.Close()
 
-	read, err := db.Query("SELECT * FROM users WHERE username='" + username + "';")
+	var query = "SELECT * FROM users WHERE username='" + username + "';"
+	writeLog(username, "[Query]: "+query)
+
+	read, err := db.Query(query)
 	if err != nil {
 		code = -2
 		msg = err.Error()
@@ -85,6 +88,8 @@ func findUser(username string) (int, string) {
 		code = -1
 		msg = "Invalid username"
 	}
+
+	writeLog(username, "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
 
 	return code, msg
 }
@@ -111,7 +116,10 @@ func updateUser(username string, password string, email string) (int, string) {
 	code, msg = findUser(username)
 
 	if code == 1 {
-		update, err := db.Query("UPDATE users SET password='" + password + "', email='" + email + "' WHERE username='" + username + "';")
+		var query = "UPDATE users SET password='" + password + "', email='" + email + "' WHERE username='" + username + "';"
+		writeLog(username, "[Query]: "+query)
+
+		update, err := db.Query(query)
 		if err != nil {
 			code = -2
 			msg = err.Error()
@@ -125,6 +133,8 @@ func updateUser(username string, password string, email string) (int, string) {
 		code = -2
 		msg = "Invalid username"
 	}
+
+	writeLog(username, "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
 
 	return code, msg
 }
@@ -151,7 +161,10 @@ func deleteUser(username string) (int, string) {
 	code, msg = findUser(username)
 
 	if code == 1 {
-		delete, err := db.Query("DELETE FROM users WHERE username='" + username + "';")
+		var query = "DELETE FROM users WHERE username='" + username + "';"
+		writeLog(username, "[Query]: "+query)
+
+		delete, err := db.Query(query)
 		if err != nil {
 			code = -2
 			msg = err.Error()

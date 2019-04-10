@@ -26,7 +26,10 @@ func createCard(pan string, ccv string, month int, year int, owner string) (int,
 
 	defer db.Close()
 
-	insert, err := db.Query("INSERT INTO cards(pan, ccv, expiry, `owner`) VALUES ('" + pan + "', '" + ccv + "', '" + strconv.Itoa(year) + "/" + strconv.Itoa(month) + "/00', '" + owner + "');")
+	var query = "INSERT INTO cards(pan, ccv, expiry, `owner`) VALUES ('" + pan + "', '" + ccv + "', '" + strconv.Itoa(year) + "/" + strconv.Itoa(month) + "/00', '" + owner + "');"
+	writeLog(owner, "[Query]: "+query)
+
+	insert, err := db.Query(query)
 	if err != nil {
 		code = -2
 		msg = "Invalid card"
@@ -36,6 +39,8 @@ func createCard(pan string, ccv string, month int, year int, owner string) (int,
 
 		defer insert.Close()
 	}
+
+	writeLog(owner, "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
 
 	return code, msg
 }

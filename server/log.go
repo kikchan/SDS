@@ -8,7 +8,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-func writeLog(msg string) {
+func writeLog(username string, msg string) {
 	db, err := sql.Open("mysql", DB_Username+":"+DB_Password+"@"+DB_Protocol+"("+DB_IP+":"+DB_Port+")/"+DB_Name)
 	if err != nil {
 		fmt.Println("Cannot connect to the database")
@@ -16,11 +16,7 @@ func writeLog(msg string) {
 
 	defer db.Close()
 
-	//fmt.Println(strings.Replace(msg, "'", "", -1))
-
-	var query = "INSERT INTO log VALUES (NOW()" + "', '" + strings.Replace(msg, "'", "", -1) + ");"
-
-	fmt.Println(query)
+	var query = "INSERT INTO log(user, date, msg) VALUES ('" + username + "', NOW()" + ", \"" + strings.Replace(msg, "'", "", -1) + "\");"
 
 	insert, err := db.Query(query)
 
