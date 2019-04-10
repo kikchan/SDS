@@ -27,7 +27,7 @@ func createCard(pan string, ccv string, month int, year int, owner string) (int,
 	defer db.Close()
 
 	var query = "INSERT INTO cards(pan, ccv, expiry, `owner`) VALUES ('" + pan + "', '" + ccv + "', '" + strconv.Itoa(year) + "/" + strconv.Itoa(month) + "/00', '" + owner + "');"
-	writeLog(owner, "[Query]: "+query)
+	writeLog(owner, "[Function]: createCard ## [Query]: "+query)
 
 	insert, err := db.Query(query)
 	if err != nil {
@@ -49,7 +49,7 @@ func createCard(pan string, ccv string, month int, year int, owner string) (int,
 	READ a card by its PAN
 	Returns:
 		1: OK
-	   -1: Card doesn't exist
+	   -1: Invalid card
 	   -2: Error executing query
 	   -3: Error connecting to DB
 */
@@ -66,7 +66,7 @@ func findCardByPAN(owner string, pan string) (int, string) {
 	defer db.Close()
 
 	var query = "SELECT * FROM cards WHERE owner='" + owner + "' AND pan='" + pan + "';"
-	writeLog(owner, "[Query]: "+query)
+	writeLog(owner, "[Function]: findCardByPAN ## [Query]: "+query)
 
 	read, err := db.Query(query)
 	if err != nil {
@@ -97,7 +97,7 @@ func findCardByPAN(owner string, pan string) (int, string) {
 	READ a card by its ID
 	Returns:
 		1: OK
-	   -1: Card doesn't exist
+	   -1: Invalid card
 	   -2: Error executing query
 	   -3: Error connecting to DB
 */
@@ -114,7 +114,7 @@ func findCardByID(owner string, id int) (int, string) {
 	defer db.Close()
 
 	var query = "SELECT * FROM cards WHERE owner='" + owner + "' AND id=" + strconv.Itoa(id) + ";"
-	writeLog(owner, "[Query]: "+query)
+	writeLog(owner, "[Function]: findCardByID ## [Query]: "+query)
 
 	read, err := db.Query(query)
 	if err != nil {
@@ -145,7 +145,7 @@ func findCardByID(owner string, id int) (int, string) {
 	READ all cards
 	Returns:
 		1: OK
-	   -1: The user doesn't have any card
+	   -1: The user doesn't have any cards
 	   -2: Error executing query
 	   -3: Error connecting to DB
 */
@@ -163,7 +163,7 @@ func getUserCards(owner string) (int, string) {
 	defer db.Close()
 
 	var query = "SELECT * FROM cards WHERE owner='" + owner + "';"
-	writeLog(owner, "[Query]: "+query)
+	writeLog(owner, "[Function]: getUserCards ## [Query]: "+query)
 
 	read, err := db.Query(query)
 	if err != nil {
@@ -202,10 +202,11 @@ func getUserCards(owner string) (int, string) {
 	UPDATE
 	Returns:
 		1: OK
+	   -1: Invalid card
 	   -2: Error executing query
 	   -3: Error connecting to DB
 */
-func updateCard(pan string, ccv string, month int, year int, owner string) (int, string) {
+func updateCard(pan string, ccv string, month int, year int, owner string, oldPAN string) (int, string) {
 	var msg string
 	var code int
 
@@ -221,8 +222,8 @@ func updateCard(pan string, ccv string, month int, year int, owner string) (int,
 
 	if code == 1 {
 		var query = "UPDATE cards SET pan='" + pan + "', ccv='" + ccv + "', expiry='" + strconv.Itoa(year) + "/" +
-			strconv.Itoa(month) + "/00' WHERE owner='" + owner + "' AND pan='" + pan + "';"
-		writeLog(owner, "[Query]: "+query)
+			strconv.Itoa(month) + "/00' WHERE owner='" + owner + "' AND pan='" + oldPAN + "';"
+		writeLog(owner, "[Function]: updateCard ## [Query]: "+query)
 
 		update, err := db.Query(query)
 		if err != nil {
@@ -231,11 +232,11 @@ func updateCard(pan string, ccv string, month int, year int, owner string) (int,
 		} else {
 			code = 1
 			msg = "Card modified: " + pan
-		}
 
-		defer update.Close()
+			defer update.Close()
+		}
 	} else {
-		code = -2
+		code = -1
 		msg = "Invalid card: " + pan
 	}
 
@@ -248,10 +249,11 @@ func updateCard(pan string, ccv string, month int, year int, owner string) (int,
 	DELETE
 	Returns:
 		1: OK
+	   -1: Invalid card
 	   -2: Error executing query
 	   -3: Error connecting to DB
 */
-func deleteCard(username string) (int, string) {
+func deleteCard(pan string, owner string) (int, string) {
 	var msg string
 	var code int
 
@@ -263,16 +265,28 @@ func deleteCard(username string) (int, string) {
 
 	defer db.Close()
 
-	delete, err := db.Query("DELETE FROM users WHERE username='" + username + "';")
-	if err != nil {
-		code = -2
-		msg = err.Error()
+	code, msg = findCardByPAN(owner, pan)
+
+	var query = "DELETE FROM cards WHERE owner='" + owner + "' AND pan='" + pan + "';"
+	writeLog(owner, "[Function]: deleteCard ## [Query]: "+query)
+
+	if code == 1 {
+		delete, err := db.Query(query)
+		if err != nil {
+			code = -2
+			msg = err.Error()
+		} else {
+			code = 1
+			msg = "Card deleted: " + pan
+
+			defer delete.Close()
+		}
 	} else {
-		code = 1
-		msg = "User deleted: " + username
+		code = -1
+		msg = "Invalid card"
 	}
 
-	defer delete.Close()
+	writeLog(owner, "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
 
 	return code, msg
 }

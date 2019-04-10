@@ -27,7 +27,7 @@ func createUser(username string, password string, name string, surname string, e
 	defer db.Close()
 
 	var query = "INSERT INTO users VALUES ('" + username + "', '" + password + "', '" + name + "', '" + surname + "', '" + email + "');"
-	writeLog(username, "[Query]: "+query)
+	writeLog(username, "[Function]: createUser ## [Query]: "+query)
 
 	insert, err := db.Query(query)
 
@@ -67,7 +67,7 @@ func findUser(username string) (int, string) {
 	defer db.Close()
 
 	var query = "SELECT * FROM users WHERE username='" + username + "';"
-	writeLog(username, "[Query]: "+query)
+	writeLog(username, "[Function]: findUser ## [Query]: "+query)
 
 	read, err := db.Query(query)
 	if err != nil {
@@ -117,7 +117,7 @@ func updateUser(username string, password string, email string) (int, string) {
 
 	if code == 1 {
 		var query = "UPDATE users SET password='" + password + "', email='" + email + "' WHERE username='" + username + "';"
-		writeLog(username, "[Query]: "+query)
+		writeLog(username, "[Function]: updateUser ## [Query]: "+query)
 
 		update, err := db.Query(query)
 		if err != nil {
@@ -162,7 +162,7 @@ func deleteUser(username string) (int, string) {
 
 	if code == 1 {
 		var query = "DELETE FROM users WHERE username='" + username + "';"
-		writeLog(username, "[Query]: "+query)
+		writeLog(username, "[Function]: deleteUser ## [Query]: "+query)
 
 		delete, err := db.Query(query)
 		if err != nil {

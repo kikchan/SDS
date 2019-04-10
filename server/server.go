@@ -132,11 +132,19 @@ func main() {
 	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
 
 	//Update an existing card
-	code, msg = updateCard("123456879832158", "155", 04, 2019, "jose")
+	code, msg = updateCard("123456879832158", "155", 04, 2019, "jose", "123456879832158")
 	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
 
 	//Update a non-existing card
-	code, msg = updateCard("15", "155", 04, 2019, "jose")
+	code, msg = updateCard("56469547632115", "155", 04, 2019, "jose", "15")
+	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
+
+	//Delete an existing card
+	code, msg = deleteCard("123456879832158", "jose")
+	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
+
+	//Update a non-existing card
+	code, msg = deleteCard("0123", "jose")
 	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
 	/*
 		DALCards function calls test END
