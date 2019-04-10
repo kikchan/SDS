@@ -46,7 +46,7 @@ func createCard(pan string, ccv string, month int, year int, owner string) (int,
 }
 
 /*
-	READ
+	READ a card by its PAN
 	Returns:
 		1: OK
 	   -1: Card doesn't exist
@@ -94,7 +94,7 @@ func findCardByPAN(owner string, pan string) (int, string) {
 }
 
 /*
-	READ
+	READ a card by its ID
 	Returns:
 		1: OK
 	   -1: Card doesn't exist
@@ -134,6 +134,63 @@ func findCardByID(owner string, id int) (int, string) {
 	} else {
 		code = -1
 		msg = "Invalid card"
+	}
+
+	writeLog(owner, "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
+
+	return code, msg
+}
+
+/*
+	READ all cards
+	Returns:
+		1: OK
+	   -1: The user doesn't have any card
+	   -2: Error executing query
+	   -3: Error connecting to DB
+*/
+func getUserCards(owner string) (int, string) {
+	var msg string
+	var code int
+	var cards []string
+
+	db, err := sql.Open("mysql", DB_Username+":"+DB_Password+"@"+DB_Protocol+"("+DB_IP+":"+DB_Port+")/"+DB_Name)
+	if err != nil {
+		code = -3
+		msg = err.Error()
+	}
+
+	defer db.Close()
+
+	var query = "SELECT * FROM cards WHERE owner='" + owner + "';"
+	writeLog(owner, "[Query]: "+query)
+
+	read, err := db.Query(query)
+	if err != nil {
+		code = -2
+		msg = err.Error()
+	}
+
+	defer read.Close()
+
+	for read.Next() {
+		var a, b, c, d, e string
+
+		err = read.Scan(&a, &b, &c, &d, &e)
+
+		code = 1
+		cards = append(cards, "["+a+" "+b+" "+c+" "+d+" "+e+"]")
+	}
+
+	if len(cards) != 0 {
+		code = 1
+
+		for i := 0; i < len(cards); i++ {
+			msg += cards[i]
+		}
+	} else {
+		code = -1
+		msg = "The user has no cards"
 	}
 
 	writeLog(owner, "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)

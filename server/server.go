@@ -126,6 +126,10 @@ func main() {
 	//Find a non-existing card
 	code, msg = findCardByID("jose", 1)
 	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
+
+	//Find all cards for user "jose"
+	code, msg = getUserCards("jose")
+	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
 	/*
 		DALCards function calls test END
 	*/
