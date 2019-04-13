@@ -69,27 +69,31 @@ func findCardByPAN(owner string, pan string) (int, string) {
 
 	defer db.Close()
 
-	var query = "SELECT * FROM cards WHERE owner='" + owner + "' AND pan='" + pan + "';"
-	writeLog(owner, "findCardByPAN", query)
+	code, msg = findUser(owner)
 
-	read, err := db.Query(query)
-	if err != nil {
-		code = -2
-		msg = err.Error()
-	}
+	if code == 1 {
+		var query = "SELECT * FROM cards WHERE owner='" + owner + "' AND pan='" + pan + "';"
+		writeLog(owner, "findCardByPAN", query)
 
-	defer read.Close()
+		read, err := db.Query(query)
+		if err != nil {
+			code = -2
+			msg = err.Error()
+		}
 
-	if read.Next() {
-		var a, b, c, d, e string
+		defer read.Close()
 
-		err = read.Scan(&a, &b, &c, &d, &e)
+		if read.Next() {
+			var a, b, c, d, e string
 
-		code = 1
-		msg = a + " " + b + " " + c + " " + d + " " + e + " "
-	} else {
-		code = -1
-		msg = "Invalid card"
+			err = read.Scan(&a, &b, &c, &d, &e)
+
+			code = 1
+			msg = a + " " + b + " " + c + " " + d + " " + e + " "
+		} else {
+			code = -1
+			msg = "Invalid card"
+		}
 	}
 
 	writeLog(owner, "findCardByPAN response", "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
@@ -117,27 +121,31 @@ func findCardByID(owner string, id int) (int, string) {
 
 	defer db.Close()
 
-	var query = "SELECT * FROM cards WHERE owner='" + owner + "' AND id=" + strconv.Itoa(id) + ";"
-	writeLog(owner, "findCardByID", query)
+	code, msg = findUser(owner)
 
-	read, err := db.Query(query)
-	if err != nil {
-		code = -2
-		msg = err.Error()
-	}
+	if code == 1 {
+		var query = "SELECT * FROM cards WHERE owner='" + owner + "' AND id=" + strconv.Itoa(id) + ";"
+		writeLog(owner, "findCardByID", query)
 
-	defer read.Close()
+		read, err := db.Query(query)
+		if err != nil {
+			code = -2
+			msg = err.Error()
+		}
 
-	if read.Next() {
-		var a, b, c, d, e string
+		defer read.Close()
 
-		err = read.Scan(&a, &b, &c, &d, &e)
+		if read.Next() {
+			var a, b, c, d, e string
 
-		code = 1
-		msg = a + " " + b + " " + c + " " + d + " " + e + " "
-	} else {
-		code = -1
-		msg = "Invalid card"
+			err = read.Scan(&a, &b, &c, &d, &e)
+
+			code = 1
+			msg = a + " " + b + " " + c + " " + d + " " + e
+		} else {
+			code = -1
+			msg = "Invalid card"
+		}
 	}
 
 	writeLog(owner, "findCardByID response", "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
@@ -226,26 +234,30 @@ func updateCard(pan string, ccv string, month int, year int, owner string, oldPA
 
 	defer db.Close()
 
-	code, msg = findCardByPAN(owner, pan)
+	code, msg = findUser(owner)
 
 	if code == 1 {
-		var query = "UPDATE cards SET pan='" + pan + "', ccv='" + ccv + "', expiry='" + strconv.Itoa(year) + "/" +
-			strconv.Itoa(month) + "/00' WHERE owner='" + owner + "' AND pan='" + oldPAN + "';"
-		writeLog(owner, "updateCard", query)
+		code, msg = findCardByPAN(owner, pan)
 
-		update, err := db.Query(query)
-		if err != nil {
-			code = -2
-			msg = err.Error()
+		if code == 1 {
+			var query = "UPDATE cards SET pan='" + pan + "', ccv='" + ccv + "', expiry='" + strconv.Itoa(year) + "/" +
+				strconv.Itoa(month) + "/00' WHERE owner='" + owner + "' AND pan='" + oldPAN + "';"
+			writeLog(owner, "updateCard", query)
+
+			update, err := db.Query(query)
+			if err != nil {
+				code = -2
+				msg = err.Error()
+			} else {
+				code = 1
+				msg = "Card modified: " + pan
+
+				defer update.Close()
+			}
 		} else {
-			code = 1
-			msg = "Card modified: " + pan
-
-			defer update.Close()
+			code = -1
+			msg = "Invalid card: " + pan
 		}
-	} else {
-		code = -1
-		msg = "Invalid card: " + pan
 	}
 
 	writeLog(owner, "updateCard response", "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)

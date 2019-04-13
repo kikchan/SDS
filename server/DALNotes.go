@@ -51,14 +51,14 @@ func createNote(text string, user string) (int, string) {
 }
 
 /*
-	READ
+	READ a card by its ID
 	Returns:
 		1: OK
-	   -1: User doesn't exist
+	   -1: Invalid card
 	   -2: Error executing query
 	   -3: Error connecting to DB
 */
-func findNote(username string) (int, string) {
+func findNoteByID(user string, id int) (int, string) {
 	var msg string
 	var code int
 
@@ -70,30 +70,95 @@ func findNote(username string) (int, string) {
 
 	defer db.Close()
 
-	var query = "SELECT * FROM users WHERE username='" + username + "';"
-	//writeLog(username, "[Function]: findUser ## [Query]: "+query)
+	code, msg = findUser(user)
 
-	read, err := db.Query(query)
+	if code == 1 {
+		var query = "SELECT * FROM notes WHERE user='" + user + "' AND id=" + strconv.Itoa(id) + ";"
+		writeLog(user, "findNoteByID", query)
+
+		read, err := db.Query(query)
+		if err != nil {
+			code = -2
+			msg = err.Error()
+		}
+
+		defer read.Close()
+
+		if read.Next() {
+			var a, b, c, d string
+
+			err = read.Scan(&a, &b, &c, &d)
+
+			code = 1
+			msg = a + " " + b + " " + c + " " + d
+		} else {
+			code = -1
+			msg = "Invalid note"
+		}
+	}
+
+	writeLog(user, "findNoteByID response", "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
+
+	return code, msg
+}
+
+/*
+	READ all cards
+	Returns:
+		1: OK
+	   -1: The user doesn't have any cards
+	   -2: Error executing query
+	   -3: Error connecting to DB
+*/
+func getUserNotes(owner string) (int, string) {
+	var msg string
+	var code int
+	var cards []string
+
+	db, err := sql.Open("mysql", DB_Username+":"+DB_Password+"@"+DB_Protocol+"("+DB_IP+":"+DB_Port+")/"+DB_Name)
 	if err != nil {
-		code = -2
+		code = -3
 		msg = err.Error()
 	}
 
-	defer read.Close()
+	defer db.Close()
 
-	if read.Next() {
-		var a, b, c, d, e string
+	code, msg = findUser(owner)
 
-		err = read.Scan(&a, &b, &c, &d, &e)
+	if code == 1 {
+		var query = "SELECT * FROM cards WHERE owner='" + owner + "';"
+		writeLog(owner, "getUserCards", query)
 
-		code = 1
-		msg = a + " " + b + " " + c + " " + d + " " + e + " "
-	} else {
-		code = -1
-		msg = "Invalid username"
+		read, err := db.Query(query)
+		if err != nil {
+			code = -2
+			msg = err.Error()
+		}
+
+		defer read.Close()
+
+		for read.Next() {
+			var a, b, c, d, e string
+
+			err = read.Scan(&a, &b, &c, &d, &e)
+
+			code = 1
+			cards = append(cards, "["+a+" "+b+" "+c+" "+d+" "+e+"]")
+		}
+
+		if len(cards) != 0 {
+			code = 1
+
+			for i := 0; i < len(cards); i++ {
+				msg += cards[i]
+			}
+		} else {
+			code = -1
+			msg = "The user has no cards"
+		}
 	}
 
-	//writeLog(username, "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
+	writeLog(owner, "getUserCards response", "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
 
 	return code, msg
 }
@@ -102,10 +167,11 @@ func findNote(username string) (int, string) {
 	UPDATE
 	Returns:
 		1: OK
+	   -1: Invalid card
 	   -2: Error executing query
 	   -3: Error connecting to DB
 */
-func updateNote(username string, password string, email string) (int, string) {
+func updateNote(pan string, ccv string, month int, year int, owner string, oldPAN string) (int, string) {
 	var msg string
 	var code int
 
@@ -117,28 +183,33 @@ func updateNote(username string, password string, email string) (int, string) {
 
 	defer db.Close()
 
-	code, msg = findUser(username)
+	code, msg = findUser(owner)
 
 	if code == 1 {
-		var query = "UPDATE users SET password='" + password + "', email='" + email + "' WHERE username='" + username + "';"
-		//writeLog(username, "[Function]: updateUser ## [Query]: "+query)
+		code, msg = findCardByPAN(owner, pan)
 
-		update, err := db.Query(query)
-		if err != nil {
-			code = -2
-			msg = err.Error()
+		if code == 1 {
+			var query = "UPDATE cards SET pan='" + pan + "', ccv='" + ccv + "', expiry='" + strconv.Itoa(year) + "/" +
+				strconv.Itoa(month) + "/00' WHERE owner='" + owner + "' AND pan='" + oldPAN + "';"
+			writeLog(owner, "updateCard", query)
+
+			update, err := db.Query(query)
+			if err != nil {
+				code = -2
+				msg = err.Error()
+			} else {
+				code = 1
+				msg = "Card modified: " + pan
+
+				defer update.Close()
+			}
 		} else {
-			code = 1
-			msg = "User modified: " + username
-
-			defer update.Close()
+			code = -1
+			msg = "Invalid card: " + pan
 		}
-	} else {
-		code = -2
-		msg = "Invalid username"
 	}
 
-	//writeLog(username, "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
+	writeLog(owner, "updateCard response", "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
 
 	return code, msg
 }
@@ -147,10 +218,11 @@ func updateNote(username string, password string, email string) (int, string) {
 	DELETE
 	Returns:
 		1: OK
+	   -1: Invalid card
 	   -2: Error executing query
 	   -3: Error connecting to DB
 */
-func deleteNote(username string) (int, string) {
+func deleteNote(pan string, owner string) (int, string) {
 	var msg string
 	var code int
 
@@ -162,28 +234,34 @@ func deleteNote(username string) (int, string) {
 
 	defer db.Close()
 
-	code, msg = findUser(username)
+	code, msg = findUser(owner)
 
 	if code == 1 {
-		var query = "DELETE FROM users WHERE username='" + username + "';"
-		//writeLog(username, "[Function]: deleteUser ## [Query]: "+query)
+		code, msg = findCardByPAN(owner, pan)
 
-		delete, err := db.Query(query)
-		if err != nil {
-			code = -2
-			msg = err.Error()
-		} else {
-			code = 1
-			msg = "User deleted: " + username
+		if code == 1 {
+			var query = "DELETE FROM cards WHERE owner='" + owner + "' AND pan='" + pan + "';"
+			writeLog(owner, "deleteCard", query)
 
-			defer delete.Close()
+			if code == 1 {
+				delete, err := db.Query(query)
+				if err != nil {
+					code = -2
+					msg = err.Error()
+				} else {
+					code = 1
+					msg = "Card deleted: " + pan
+
+					defer delete.Close()
+				}
+			} else {
+				code = -1
+				msg = "Invalid card"
+			}
 		}
-	} else {
-		code = -2
-		msg = "User \"" + username + "\" doesn't exist"
 	}
 
-	//writeLog(username, "[Function]: deleteUser ## [Query]: "+query)
+	writeLog(owner, "deleteCard response", "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
 
 	return code, msg
 }
