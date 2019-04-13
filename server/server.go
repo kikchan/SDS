@@ -66,6 +66,13 @@ func main() {
 
 	//HACER SELECT DE LA BD E INTRODUCIR USUARIOS EN usersBD
 
+	/*******************************************************************************
+	********* Los comentarios en inglés, por favor *********************************
+	********************************************************************************
+	***************Comenta las líneas de abajo para que no te tarde la *************
+	********* vida ejecutando las pruebas ******************************************
+	********************************************************************************/
+
 	DALUsersTest()
 	DALCardsTest()
 	DALNotesTest()
