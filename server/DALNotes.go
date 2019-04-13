@@ -51,10 +51,10 @@ func createNote(text string, user string) (int, string) {
 }
 
 /*
-	READ a card by its ID
+	READ a note by its ID
 	Returns:
 		1: OK
-	   -1: Invalid card
+	   -1: Invalid note
 	   -2: Error executing query
 	   -3: Error connecting to DB
 */
@@ -103,17 +103,17 @@ func findNoteByID(user string, id int) (int, string) {
 }
 
 /*
-	READ all cards
+	READ all notes
 	Returns:
 		1: OK
-	   -1: The user doesn't have any cards
+	   -1: The user doesn't have any notes
 	   -2: Error executing query
 	   -3: Error connecting to DB
 */
-func getUserNotes(owner string) (int, string) {
+func getUserNotes(user string) (int, string) {
 	var msg string
 	var code int
-	var cards []string
+	var notes []string
 
 	db, err := sql.Open("mysql", DB_Username+":"+DB_Password+"@"+DB_Protocol+"("+DB_IP+":"+DB_Port+")/"+DB_Name)
 	if err != nil {
@@ -123,11 +123,12 @@ func getUserNotes(owner string) (int, string) {
 
 	defer db.Close()
 
-	code, msg = findUser(owner)
+	code, msg = findUser(user)
 
 	if code == 1 {
-		var query = "SELECT * FROM cards WHERE owner='" + owner + "';"
-		writeLog(owner, "getUserCards", query)
+		var query = "SELECT * FROM notes WHERE user='" + user + "';"
+
+		writeLog(user, "getUserNotes", query)
 
 		read, err := db.Query(query)
 		if err != nil {
@@ -138,27 +139,28 @@ func getUserNotes(owner string) (int, string) {
 		defer read.Close()
 
 		for read.Next() {
-			var a, b, c, d, e string
+			var a, b, c, d string
 
-			err = read.Scan(&a, &b, &c, &d, &e)
+			err = read.Scan(&a, &b, &c, &d)
 
 			code = 1
-			cards = append(cards, "["+a+" "+b+" "+c+" "+d+" "+e+"]")
+			notes = append(notes, "["+a+" "+b+" "+c+" "+d+"]")
 		}
 
-		if len(cards) != 0 {
+		if len(notes) != 0 {
 			code = 1
+			msg = ""
 
-			for i := 0; i < len(cards); i++ {
-				msg += cards[i]
+			for i := 0; i < len(notes); i++ {
+				msg += notes[i]
 			}
 		} else {
 			code = -1
-			msg = "The user has no cards"
+			msg = "The user has no notes"
 		}
 	}
 
-	writeLog(owner, "getUserCards response", "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
+	writeLog(user, "getUserNotes response", "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
 
 	return code, msg
 }
@@ -167,11 +169,11 @@ func getUserNotes(owner string) (int, string) {
 	UPDATE
 	Returns:
 		1: OK
-	   -1: Invalid card
+	   -1: Invalid note
 	   -2: Error executing query
 	   -3: Error connecting to DB
 */
-func updateNote(pan string, ccv string, month int, year int, owner string, oldPAN string) (int, string) {
+func updateNote(id int, text string, user string) (int, string) {
 	var msg string
 	var code int
 
@@ -183,15 +185,14 @@ func updateNote(pan string, ccv string, month int, year int, owner string, oldPA
 
 	defer db.Close()
 
-	code, msg = findUser(owner)
+	code, msg = findUser(user)
 
 	if code == 1 {
-		code, msg = findCardByPAN(owner, pan)
+		code, msg = findNoteByID(user, id)
 
 		if code == 1 {
-			var query = "UPDATE cards SET pan='" + pan + "', ccv='" + ccv + "', expiry='" + strconv.Itoa(year) + "/" +
-				strconv.Itoa(month) + "/00' WHERE owner='" + owner + "' AND pan='" + oldPAN + "';"
-			writeLog(owner, "updateCard", query)
+			var query = "UPDATE notes SET text=\"" + text + "\" WHERE user='" + user + "' AND id=" + strconv.Itoa(id) + ";"
+			writeLog(user, "updateNote", query)
 
 			update, err := db.Query(query)
 			if err != nil {
@@ -199,17 +200,17 @@ func updateNote(pan string, ccv string, month int, year int, owner string, oldPA
 				msg = err.Error()
 			} else {
 				code = 1
-				msg = "Card modified: " + pan
+				msg = "Note modified: " + strconv.Itoa(id)
 
 				defer update.Close()
 			}
 		} else {
 			code = -1
-			msg = "Invalid card: " + pan
+			msg = "Invalid note: " + strconv.Itoa(id)
 		}
 	}
 
-	writeLog(owner, "updateCard response", "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
+	writeLog(user, "updateNote response", "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
 
 	return code, msg
 }
@@ -218,11 +219,11 @@ func updateNote(pan string, ccv string, month int, year int, owner string, oldPA
 	DELETE
 	Returns:
 		1: OK
-	   -1: Invalid card
+	   -1: Invalid note
 	   -2: Error executing query
 	   -3: Error connecting to DB
 */
-func deleteNote(pan string, owner string) (int, string) {
+func deleteNote(id int, user string) (int, string) {
 	var msg string
 	var code int
 
@@ -234,14 +235,14 @@ func deleteNote(pan string, owner string) (int, string) {
 
 	defer db.Close()
 
-	code, msg = findUser(owner)
+	code, msg = findUser(user)
 
 	if code == 1 {
-		code, msg = findCardByPAN(owner, pan)
+		code, msg = findNoteByID(user, id)
 
 		if code == 1 {
-			var query = "DELETE FROM cards WHERE owner='" + owner + "' AND pan='" + pan + "';"
-			writeLog(owner, "deleteCard", query)
+			var query = "DELETE FROM notes WHERE user='" + user + "' AND id=" + strconv.Itoa(id) + ";"
+			writeLog(user, "deleteNote", query)
 
 			if code == 1 {
 				delete, err := db.Query(query)
@@ -250,18 +251,18 @@ func deleteNote(pan string, owner string) (int, string) {
 					msg = err.Error()
 				} else {
 					code = 1
-					msg = "Card deleted: " + pan
+					msg = "Note deleted: " + strconv.Itoa(id)
 
 					defer delete.Close()
 				}
 			} else {
 				code = -1
-				msg = "Invalid card"
+				msg = "Invalid note"
 			}
 		}
 	}
 
-	writeLog(owner, "deleteCard response", "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
+	writeLog(user, "deleteNote response", "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
 
 	return code, msg
 }

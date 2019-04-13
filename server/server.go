@@ -66,6 +66,10 @@ func main() {
 
 	//HACER SELECT DE LA BD E INTRODUCIR USUARIOS EN usersBD
 
+	DALUsersTest()
+	DALCardsTest()
+	DALNotesTest()
+
 	http.HandleFunc("/", handler) // asignamos un handler global
 
 	// escuchamos el puerto 8080 con https y comprobamos el error
