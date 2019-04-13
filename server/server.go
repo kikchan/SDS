@@ -56,8 +56,9 @@ func decrypt(data []byte, passphrase string) []byte {
 func main() {
 	var port = "8080"
 
-	DALUsersTest()
-	DALCardsTest()
+	//DALUsersTest()
+	//DALCardsTest()
+	DALNotesTest()
 
 	if len(os.Args) == 2 {
 		port = os.Args[1]

@@ -26,21 +26,25 @@ func createCard(pan string, ccv string, month int, year int, owner string) (int,
 
 	defer db.Close()
 
-	var query = "INSERT INTO cards(pan, ccv, expiry, `owner`) VALUES ('" + pan + "', '" + ccv + "', '" + strconv.Itoa(year) + "/" + strconv.Itoa(month) + "/00', '" + owner + "');"
-	writeLog(owner, "[Function]: createCard ## [Query]: "+query)
+	code, msg = findUser(owner)
 
-	insert, err := db.Query(query)
-	if err != nil {
-		code = -2
-		msg = "Invalid card"
-	} else {
-		code = 1
-		msg = "Added new card(" + pan + ") for user: " + owner
+	if code == 1 {
+		var query = "INSERT INTO cards(pan, ccv, expiry, `owner`) VALUES ('" + pan + "', '" + ccv + "', '" + strconv.Itoa(year) + "/" + strconv.Itoa(month) + "/00', '" + owner + "');"
+		writeLog(owner, "createCard", query)
 
-		defer insert.Close()
+		insert, err := db.Query(query)
+		if err != nil {
+			code = -2
+			msg = "Invalid card"
+		} else {
+			code = 1
+			msg = "Added new card(" + pan + ") for user: " + owner
+
+			defer insert.Close()
+		}
 	}
 
-	writeLog(owner, "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
+	writeLog(owner, "createCard response", "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
 
 	return code, msg
 }
@@ -66,7 +70,7 @@ func findCardByPAN(owner string, pan string) (int, string) {
 	defer db.Close()
 
 	var query = "SELECT * FROM cards WHERE owner='" + owner + "' AND pan='" + pan + "';"
-	writeLog(owner, "[Function]: findCardByPAN ## [Query]: "+query)
+	writeLog(owner, "findCardByPAN", query)
 
 	read, err := db.Query(query)
 	if err != nil {
@@ -88,7 +92,7 @@ func findCardByPAN(owner string, pan string) (int, string) {
 		msg = "Invalid card"
 	}
 
-	writeLog(owner, "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
+	writeLog(owner, "findCardByPAN response", "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
 
 	return code, msg
 }
@@ -114,7 +118,7 @@ func findCardByID(owner string, id int) (int, string) {
 	defer db.Close()
 
 	var query = "SELECT * FROM cards WHERE owner='" + owner + "' AND id=" + strconv.Itoa(id) + ";"
-	writeLog(owner, "[Function]: findCardByID ## [Query]: "+query)
+	writeLog(owner, "findCardByID", query)
 
 	read, err := db.Query(query)
 	if err != nil {
@@ -136,7 +140,7 @@ func findCardByID(owner string, id int) (int, string) {
 		msg = "Invalid card"
 	}
 
-	writeLog(owner, "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
+	writeLog(owner, "findCardByID response", "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
 
 	return code, msg
 }
@@ -166,7 +170,7 @@ func getUserCards(owner string) (int, string) {
 
 	if code == 1 {
 		var query = "SELECT * FROM cards WHERE owner='" + owner + "';"
-		writeLog(owner, "[Function]: getUserCards ## [Query]: "+query)
+		writeLog(owner, "getUserCards", query)
 
 		read, err := db.Query(query)
 		if err != nil {
@@ -197,7 +201,7 @@ func getUserCards(owner string) (int, string) {
 		}
 	}
 
-	writeLog(owner, "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
+	writeLog(owner, "getUserCards response", "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
 
 	return code, msg
 }
@@ -227,7 +231,7 @@ func updateCard(pan string, ccv string, month int, year int, owner string, oldPA
 	if code == 1 {
 		var query = "UPDATE cards SET pan='" + pan + "', ccv='" + ccv + "', expiry='" + strconv.Itoa(year) + "/" +
 			strconv.Itoa(month) + "/00' WHERE owner='" + owner + "' AND pan='" + oldPAN + "';"
-		writeLog(owner, "[Function]: updateCard ## [Query]: "+query)
+		writeLog(owner, "updateCard", query)
 
 		update, err := db.Query(query)
 		if err != nil {
@@ -244,7 +248,7 @@ func updateCard(pan string, ccv string, month int, year int, owner string, oldPA
 		msg = "Invalid card: " + pan
 	}
 
-	writeLog(owner, "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
+	writeLog(owner, "updateCard response", "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
 
 	return code, msg
 }
@@ -276,7 +280,7 @@ func deleteCard(pan string, owner string) (int, string) {
 
 		if code == 1 {
 			var query = "DELETE FROM cards WHERE owner='" + owner + "' AND pan='" + pan + "';"
-			writeLog(owner, "[Function]: deleteCard ## [Query]: "+query)
+			writeLog(owner, "deleteCard", query)
 
 			if code == 1 {
 				delete, err := db.Query(query)
@@ -296,7 +300,7 @@ func deleteCard(pan string, owner string) (int, string) {
 		}
 	}
 
-	writeLog(owner, "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
+	writeLog(owner, "deleteCard response", "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
 
 	return code, msg
 }

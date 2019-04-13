@@ -14,7 +14,7 @@ import (
 	   -2: Error executing query
 	   -3: Error connecting to DB
 */
-func createUser(username string, password string, name string, surname string, email string) (int, string) {
+func createNote(text string, user string) (int, string) {
 	var msg string
 	var code int
 
@@ -26,22 +26,26 @@ func createUser(username string, password string, name string, surname string, e
 
 	defer db.Close()
 
-	var query = "INSERT INTO users VALUES ('" + username + "', '" + password + "', '" + name + "', '" + surname + "', '" + email + "');"
-	writeLog(username, "createUser", query)
+	code, msg = findUser(user)
 
-	insert, err := db.Query(query)
+	if code == 1 {
+		var query = "INSERT INTO notes(text, modified, user) VALUES (\"" + text + "\", NOW(), '" + user + "');"
+		writeLog(user, "createNote", query)
 
-	if err != nil {
-		code = -2
-		msg = "Invalid username"
-	} else {
-		code = 1
-		msg = "User created: " + username + ", " + name + " " + surname
+		insert, err := db.Query(query)
 
-		defer insert.Close()
+		if err != nil {
+			code = -2
+			msg = "Error executing the query"
+		} else {
+			code = 1
+			msg = "Note created for user: " + user
+
+			defer insert.Close()
+		}
 	}
 
-	writeLog(username, "createUser response", "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
+	writeLog(user, "createNote response", "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
 
 	return code, msg
 }
@@ -54,7 +58,7 @@ func createUser(username string, password string, name string, surname string, e
 	   -2: Error executing query
 	   -3: Error connecting to DB
 */
-func findUser(username string) (int, string) {
+func findNote(username string) (int, string) {
 	var msg string
 	var code int
 
@@ -67,7 +71,7 @@ func findUser(username string) (int, string) {
 	defer db.Close()
 
 	var query = "SELECT * FROM users WHERE username='" + username + "';"
-	writeLog(username, "findUser", query)
+	//writeLog(username, "[Function]: findUser ## [Query]: "+query)
 
 	read, err := db.Query(query)
 	if err != nil {
@@ -89,7 +93,7 @@ func findUser(username string) (int, string) {
 		msg = "Invalid username"
 	}
 
-	writeLog(username, "findUser response", "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
+	//writeLog(username, "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
 
 	return code, msg
 }
@@ -101,7 +105,7 @@ func findUser(username string) (int, string) {
 	   -2: Error executing query
 	   -3: Error connecting to DB
 */
-func updateUser(username string, password string, email string) (int, string) {
+func updateNote(username string, password string, email string) (int, string) {
 	var msg string
 	var code int
 
@@ -117,7 +121,7 @@ func updateUser(username string, password string, email string) (int, string) {
 
 	if code == 1 {
 		var query = "UPDATE users SET password='" + password + "', email='" + email + "' WHERE username='" + username + "';"
-		writeLog(username, "updateUser", query)
+		//writeLog(username, "[Function]: updateUser ## [Query]: "+query)
 
 		update, err := db.Query(query)
 		if err != nil {
@@ -134,7 +138,7 @@ func updateUser(username string, password string, email string) (int, string) {
 		msg = "Invalid username"
 	}
 
-	writeLog(username, "updateUser response", "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
+	//writeLog(username, "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
 
 	return code, msg
 }
@@ -146,7 +150,7 @@ func updateUser(username string, password string, email string) (int, string) {
 	   -2: Error executing query
 	   -3: Error connecting to DB
 */
-func deleteUser(username string) (int, string) {
+func deleteNote(username string) (int, string) {
 	var msg string
 	var code int
 
@@ -162,7 +166,7 @@ func deleteUser(username string) (int, string) {
 
 	if code == 1 {
 		var query = "DELETE FROM users WHERE username='" + username + "';"
-		writeLog(username, "deleteUser", query)
+		//writeLog(username, "[Function]: deleteUser ## [Query]: "+query)
 
 		delete, err := db.Query(query)
 		if err != nil {
@@ -179,7 +183,7 @@ func deleteUser(username string) (int, string) {
 		msg = "User \"" + username + "\" doesn't exist"
 	}
 
-	writeLog(username, "deleteUser response", "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
+	//writeLog(username, "[Function]: deleteUser ## [Query]: "+query)
 
 	return code, msg
 }
