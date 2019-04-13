@@ -16,15 +16,21 @@ go run cnx.go cli
 package main
 
 import (
-	"bufio"
-	"fmt"
-	"net"
-	"os"
-	"crypto/md5"
+	"bytes"
+	"compress/zlib"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
-	"encoding/hex"
+	"crypto/rsa"
+	"crypto/sha512"
+	"crypto/tls"
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/url"
+	"os"
+
 	//"net/http"
 	//"crypto/tls"
 	"io"
@@ -51,48 +57,34 @@ func chk(e error) {
 	Data map[string]string // datos adicionales del usuario
 }*/
 
-func createHash(key string) string {
-	hasher := md5.New()
-	hasher.Write([]byte(key))
-	return hex.EncodeToString(hasher.Sum(nil))
+// función para cifrar (con AES en este caso), adjunta el IV al principio
+func encrypt(data, key []byte) (out []byte) {
+	out = make([]byte, len(data)+16)    // reservamos espacio para el IV al principio
+	rand.Read(out[:16])                 // generamos el IV
+	blk, err := aes.NewCipher(key)      // cifrador en bloque (AES), usa key
+	chk(err)                            // comprobamos el error
+	ctr := cipher.NewCTR(blk, out[:16]) // cifrador en flujo: modo CTR, usa IV
+	ctr.XORKeyStream(out[16:], data)    // ciframos los datos
+	return
 }
 
-func encrypt(data []byte, passphrase string) []byte {
-	block, _ := aes.NewCipher([]byte(createHash(passphrase)))
-	gcm, err := cipher.NewGCM(block)
-	if err != nil {
-		panic(err.Error())
-	}
-	nonce := make([]byte, gcm.NonceSize())
-	if _, err = io.ReadFull(rand.Reader, nonce); err != nil {
-		panic(err.Error())
-	}
-	ciphertext := gcm.Seal(nonce, nonce, data, nil)
-	return ciphertext
+// función para comprimir
+func compress(data []byte) []byte {
+	var b bytes.Buffer      // b contendrá los datos comprimidos (tamaño variable)
+	w := zlib.NewWriter(&b) // escritor que comprime sobre b
+	w.Write(data)           // escribimos los datos
+	w.Close()               // cerramos el escritor (buffering)
+	return b.Bytes()        // devolvemos los datos comprimidos
 }
 
-func decrypt(data []byte, passphrase string) []byte {
-	key := []byte(createHash(passphrase))
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		panic(err.Error())
-	}
-	gcm, err := cipher.NewGCM(block)
-	if err != nil {
-		panic(err.Error())
-	}
-	nonceSize := gcm.NonceSize()
-	nonce, ciphertext := data[:nonceSize], data[nonceSize:]
-	plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)
-	if err != nil {
-		panic(err.Error())
-	}
-	return plaintext
+// función para codificar de []bytes a string (Base64)
+func encode64(data []byte) string {
+	return base64.StdEncoding.EncodeToString(data) // sólo utiliza caracteres "imprimibles"
 }
 
-func menu(){
-	menu := 
-	`
+func menu(eleccion *int) {
+	menu :=
+		`
 		Bienvenido
 		[ 1 ] Login
 		[ 2 ] Register
@@ -102,62 +94,33 @@ func menu(){
 
 	fmt.Print(menu)
 
-	var eleccion int //Declarar variable y tipo antes de escanear, esto es obligatorio
-	fmt.Scanln(&eleccion)
-
-	switch eleccion{
-		case 1:
-			fmt.Println("Iniciar sesión:")
-			login()
-		case 2:
-			fmt.Println("Registrar usuario:")
-			register()
-		default:
-			fmt.Println("No prefieres ninguno de ellos")
-	}
+	fmt.Scanln(eleccion)
 }
 
-func login(){
-	var username string
-	var password string
-
+func login(username *string, password *string) {
 	fmt.Printf("Insert username: ")
-	fmt.Scanln(&username)
+	fmt.Scanln(username)
 
 	fmt.Printf("Insert password: ")
-	fmt.Scanln(&password)
-
-	ciphertext := encrypt([]byte(username), password)
-	fmt.Printf("Encrypted: %x\n", ciphertext)
-	plaintext := decrypt(ciphertext, password)
-	fmt.Printf("Decrypted: %s\n", plaintext)
-
+	fmt.Scanln(password)
 }
 
-func register(){
-	var username string
-	var surname string
-	var password string
-	var creditCard string	
-	
+func register(username *string, password *string, name *string, surname *string, email *string) {
+
 	fmt.Println("Insert username:")
-	fmt.Scanln(&username)
-	
-	fmt.Println("Insert surname:")
-	fmt.Scanln(&surname)
+	fmt.Scanln(username)
 
 	fmt.Println("Insert password:")
-	fmt.Scanln(&password)
-	
-	fmt.Println("Insert credit card:")
-	fmt.Scanln(&creditCard)
+	fmt.Scanln(password)
 
+	fmt.Println("Insert name:")
+	fmt.Scanln(name)
 
-	ciphertext := encrypt([]byte(username), password)
-	fmt.Printf("Encrypted: %x\n", ciphertext)
-	plaintext := decrypt(ciphertext, password)
-	fmt.Printf("Decrypted: %s\n", plaintext)
+	fmt.Println("Insert surname:")
+	fmt.Scanln(surname)
 
+	fmt.Println("Insert email:")
+	fmt.Scanln(email)
 }
 
 func main() {
@@ -170,33 +133,107 @@ func main() {
 		fmt.Println("Intentando conectar al puerto: " + puerto + " (por defecto)")
 	}
 
-	conn, err := net.Dial("tcp", "localhost:"+puerto) // llamamos al servidor
-	chk(err)
-	defer conn.Close() // es importante cerrar la conexión al finalizar
+	var eleccion int //Declarar variable y tipo antes de escanear, esto es obligatorio
 
-	fmt.Println("Entrando en modo cliente...")
-	fmt.Println("conectado a ", conn.RemoteAddr())
-
-	menu()
-
-	keyscan := bufio.NewScanner(os.Stdin) // scanner para la entrada estándar (teclado)
-	netscan := bufio.NewScanner(conn)     // scanner para la conexión (datos desde el servidor)
-
-	for keyscan.Scan() { // escaneamos la entrada
-		fmt.Fprintln(conn, keyscan.Text())         // enviamos la entrada al servidor
-		netscan.Scan()                             // escaneamos la conexión
-		fmt.Println("servidor: ", netscan.Text()) // mostramos mensaje desde el servidor
-	}
-
-	/*
+	/* creamos un cliente especial que no comprueba la validez de los certificados
+	esto es necesario por que usamos certificados autofirmados (para pruebas) */
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	client := &http.Client{Transport: tr}
 
-	r, err := client.PostForm("https://localhost:10443", data) // enviamos por POST
+	// generamos un par de claves (privada, pública) para el servidor
+	pkClient, err := rsa.GenerateKey(rand.Reader, 1024)
 	chk(err)
-	io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
-	fmt.Println()
+	pkClient.Precompute() // aceleramos su uso con un precálculo
+
+	pkJSON, err := json.Marshal(&pkClient) // codificamos con JSON
+	chk(err)
+
+	keyPub := pkClient.Public()           // extraemos la clave pública por separado
+	pubJSON, err := json.Marshal(&keyPub) // y codificamos con JSON
+	chk(err)
+
+	for {
+		menu(&eleccion)
+
+		switch eleccion {
+		case 1:
+			var username string
+			var password string
+
+			fmt.Println("Iniciar sesión:")
+			login(&username, &password)
+
+			// hash con SHA512 de la contraseña
+			keyClient := sha512.Sum512([]byte(password))
+			keyLogin := keyClient[:32] // una mitad para el login (256 bits)
+
+			// ** ejemplo de login
+			data := url.Values{}
+			data.Set("cmd", "login")             // comando (string)
+			data.Set("user", username)           // usuario (string)
+			data.Set("pass", encode64(keyLogin)) // contraseña (a base64 porque es []byte)
+			r, err := client.PostForm("https://localhost:8080", data)
+			chk(err)
+			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
+			fmt.Println()
+		case 2:
+			var username string
+			var password string
+			var name string
+			var surname string
+			var email string
+
+			fmt.Println("Registrar usuario:")
+			register(&username, &password, &name, &surname, &email)
+
+			// hash con SHA512 de la contraseña
+			keyClient := sha512.Sum512([]byte(password))
+			keyLogin := keyClient[:32]  // una mitad para el login (256 bits)
+			keyData := keyClient[32:64] // la otra para los datos (256 bits)
+
+			// ** ejemplo de registro
+			data := url.Values{}                 // estructura para contener los valores
+			data.Set("cmd", "register")          // comando (string)
+			data.Set("user", username)           // usuario (string)
+			data.Set("pass", encode64(keyLogin)) // "contraseña" a base64
+			data.Set("name", name)
+			data.Set("surname", surname)
+			data.Set("email", email)
+
+			// comprimimos y codificamos la clave pública
+			data.Set("pubkey", encode64(compress(pubJSON)))
+
+			// comprimimos, ciframos y codificamos la clave privada
+			data.Set("prikey", encode64(encrypt(compress(pkJSON), keyData)))
+
+			r, err := client.PostForm("https://localhost:8080", data) // enviamos por POST
+			chk(err)
+			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
+			fmt.Println()
+		default:
+			fmt.Println("No prefieres ninguno de ellos")
+		}
+	}
+
+	/*
+		conn, err := net.Dial("tcp", "localhost:"+puerto) // llamamos al servidor
+		chk(err)
+		defer conn.Close() // es importante cerrar la conexión al finalizar
+
+		fmt.Println("Entrando en modo cliente...")
+		fmt.Println("conectado a ", conn.RemoteAddr())
+
+		menu()
+
+		keyscan := bufio.NewScanner(os.Stdin) // scanner para la entrada estándar (teclado)
+		netscan := bufio.NewScanner(conn)     // scanner para la conexión (datos desde el servidor)
+
+		for keyscan.Scan() { // escaneamos la entrada
+			fmt.Fprintln(conn, keyscan.Text())        // enviamos la entrada al servidor
+			netscan.Scan()                            // escaneamos la conexión
+			fmt.Println("servidor: ", netscan.Text()) // mostramos mensaje desde el servidor
+		}
 	*/
 }
