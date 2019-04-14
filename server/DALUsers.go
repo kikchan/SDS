@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"encoding/hex"
 	"strconv"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -14,7 +15,7 @@ import (
 	   -2: Error executing query
 	   -3: Error connecting to DB
 */
-func createUser(username string, password string, name string, surname string, email string) (int, string) {
+func createUser(username string, password string, hash string, salt string, name string, surname string, email string) (int, string) {
 	var msg string
 	var code int
 
@@ -26,7 +27,7 @@ func createUser(username string, password string, name string, surname string, e
 
 	defer db.Close()
 
-	var query = "INSERT INTO users VALUES ('" + username + "', '" + password + "', '" + name + "', '" + surname + "', '" + email + "');"
+	var query = "INSERT INTO users VALUES ('" + username + "', '" + password + "', '" + hash + "', '" + salt + "', '" + name + "', '" + surname + "', '" + email + "');"
 	writeLog(username, "createUser", query)
 
 	insert, err := db.Query(query)
@@ -54,9 +55,10 @@ func createUser(username string, password string, name string, surname string, e
 	   -2: Error executing query
 	   -3: Error connecting to DB
 */
-func findUser(username string) (int, string) {
+func findUser(username string) (int, string, user) {
 	var msg string
 	var code int
+	var user user
 
 	db, err := sql.Open("mysql", DB_Username+":"+DB_Password+"@"+DB_Protocol+"("+DB_IP+":"+DB_Port+")/"+DB_Name)
 	if err != nil {
@@ -78,12 +80,19 @@ func findUser(username string) (int, string) {
 	defer read.Close()
 
 	if read.Next() {
-		var a, b, c, d, e string
+		var a, b, c, d, e, f, g string
 
-		err = read.Scan(&a, &b, &c, &d, &e)
+		err = read.Scan(&a, &b, &c, &d, &e, &f, &g)
 
 		code = 1
-		msg = a + " " + b + " " + c + " " + d + " " + e + " "
+		msg = a + " " + b + " " + c + " " + d + " " + e + " " + " " + f + " " + g
+		user.Username = a
+		user.Password = b
+		user.Hash, _ = hex.DecodeString(c)
+		user.Salt, _ = hex.DecodeString(d)
+		user.Name = e
+		user.Surname = f
+		user.Email = g
 	} else {
 		code = -1
 		msg = "Invalid username"
@@ -91,7 +100,7 @@ func findUser(username string) (int, string) {
 
 	writeLog(username, "findUser response", "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
 
-	return code, msg
+	return code, msg, user
 }
 
 /*
@@ -113,7 +122,7 @@ func updateUser(username string, password string, email string) (int, string) {
 
 	defer db.Close()
 
-	code, msg = findUser(username)
+	code, msg, _ = findUser(username)
 
 	if code == 1 {
 		var query = "UPDATE users SET password='" + password + "', email='" + email + "' WHERE username='" + username + "';"
@@ -158,7 +167,7 @@ func deleteUser(username string) (int, string) {
 
 	defer db.Close()
 
-	code, msg = findUser(username)
+	code, msg, _ = findUser(username)
 
 	if code == 1 {
 		var query = "DELETE FROM users WHERE username='" + username + "';"

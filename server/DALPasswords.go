@@ -27,7 +27,7 @@ func createPassword(username string, pass string, user string) (int, string) {
 
 	defer db.Close()
 
-	code, msg = findUser(user)
+	code, msg, _ = findUser(user)
 
 	if code == 1 {
 		var query = "INSERT INTO passwords(username, pass, date, user) VALUES ('" + username + "', '" + pass + "', NOW(), '" + user + "');"
@@ -72,7 +72,7 @@ func findPasswordByID(user string, id int) (int, string) {
 
 	defer db.Close()
 
-	code, msg = findUser(user)
+	code, msg, _ = findUser(user)
 
 	if code == 1 {
 		var query = "SELECT * FROM passwords WHERE user='" + user + "' AND id=" + strconv.Itoa(id) + ";"
@@ -127,7 +127,7 @@ func getUserPasswords(user string) (int, string) {
 
 	defer db.Close()
 
-	code, msg = findUser(user)
+	code, msg, _ = findUser(user)
 
 	if code == 1 {
 		var query = "SELECT * FROM passwords WHERE user='" + user + "';"
@@ -189,7 +189,7 @@ func updatePassword(id int, text string, user string) (int, string) {
 
 	defer db.Close()
 
-	code, msg = findUser(user)
+	code, msg, _ = findUser(user)
 
 	if code == 1 {
 		code, msg = findNoteByID(user, id)
@@ -239,7 +239,7 @@ func deletePassword(id int, user string) (int, string) {
 
 	defer db.Close()
 
-	code, msg = findUser(user)
+	code, msg, _ = findUser(user)
 
 	if code == 1 {
 		code, msg = findNoteByID(user, id)

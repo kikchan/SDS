@@ -26,7 +26,7 @@ func createNote(text string, user string) (int, string) {
 
 	defer db.Close()
 
-	code, msg = findUser(user)
+	code, msg, _ = findUser(user)
 
 	if code == 1 {
 		var query = "INSERT INTO notes(text, modified, user) VALUES (\"" + text + "\", NOW(), '" + user + "');"
@@ -71,7 +71,7 @@ func findNoteByID(user string, id int) (int, string) {
 
 	defer db.Close()
 
-	code, msg = findUser(user)
+	code, msg, _ = findUser(user)
 
 	if code == 1 {
 		var query = "SELECT * FROM notes WHERE user='" + user + "' AND id=" + strconv.Itoa(id) + ";"
@@ -124,7 +124,7 @@ func getUserNotes(user string) (int, string) {
 
 	defer db.Close()
 
-	code, msg = findUser(user)
+	code, msg, _ = findUser(user)
 
 	if code == 1 {
 		var query = "SELECT * FROM notes WHERE user='" + user + "';"
@@ -186,7 +186,7 @@ func updateNote(id int, text string, user string) (int, string) {
 
 	defer db.Close()
 
-	code, msg = findUser(user)
+	code, msg, _ = findUser(user)
 
 	if code == 1 {
 		code, msg = findNoteByID(user, id)
@@ -236,7 +236,7 @@ func deleteNote(id int, user string) (int, string) {
 
 	defer db.Close()
 
-	code, msg = findUser(user)
+	code, msg, _ = findUser(user)
 
 	if code == 1 {
 		code, msg = findNoteByID(user, id)

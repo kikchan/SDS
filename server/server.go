@@ -1,13 +1,17 @@
 package main
 
 import (
+	"bytes"
+	"crypto/rand"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 
 	_ "github.com/go-sql-driver/mysql"
+	"golang.org/x/crypto/scrypt"
 )
 
 //Database connection variables
@@ -28,14 +32,12 @@ func chk(e error) {
 type user struct {
 	Username string
 	Password string
+	Hash     []byte // hash de la contraseña
+	Salt     []byte // sal para la contraseña
 	Name     string
 	Surname  string
 	Email    string
-	/* FALTA AÑADIR ESTO
-	Hash []byte            // hash de la contraseña
-	Salt []byte            // sal para la contraseña
-	Data map[string]string // datos adicionales del usuario
-	*/
+	Data     map[string]string // datos adicionales del usuario
 }
 
 // función para decodificar de string a []bytes (Base64)
@@ -76,7 +78,7 @@ func main() {
 	//DALUsersTest()
 	//DALCardsTest()
 	//DALNotesTest()
-	DALPasswordsTest()
+	//DALPasswordsTest()
 
 	http.HandleFunc("/", handler) // asignamos un handler global
 
@@ -86,9 +88,6 @@ func main() {
 	chk(http.ListenAndServeTLS(":8080", "cert.pem", "key.pem", nil))
 
 	/*
-		DALUsersTest()
-		DALCardsTest()
-		DALNotesTest()
 
 		if len(os.Args) == 2 {
 			port = os.Args[1]
@@ -141,23 +140,24 @@ func handler(w http.ResponseWriter, req *http.Request) {
 
 	switch req.Form.Get("cmd") { // comprobamos comando desde el cliente
 	case "login": // ** login
+		var user user
 		fmt.Println(req.Form.Get("cmd"))
-		code, userJSON := findUser(req.Form.Get("user"))
+		code, _, user := findUser(req.Form.Get("user"))
 
 		fmt.Println(code)
-		fmt.Println(userJSON)
 
-		//password := decode64(req.Form.Get("pass")) // obtenemos la contraseña
-		//hash, _ := scrypt.Key(password, user.Salt, 16384, 8, 1, 32) // scrypt(contraseña)
-		//if bytes.Compare(u.Hash, hash) != 0 { // comparamos
-		//	response(w, false, "Credenciales inválidas")
-		//	return
-		//}
+		password := decode64(req.Form.Get("pass")) // obtenemos la contraseña
+		fmt.Println(password)
+		hash, _ := scrypt.Key(password, user.Salt, 16384, 8, 1, 32) // scrypt(contraseña)
+		if bytes.Compare(user.Hash, hash) != 0 {                    // comparamos
+			response(w, false, "Credenciales inválidas")
+			return
+		}
 
 		response(w, true, "Credenciales válidas")
 
 	case "register": // ** registro
-		code, _ := findUser(req.Form.Get("user"))
+		code, _, _ := findUser(req.Form.Get("user"))
 		if code == -1 {
 			u := user{}
 			u.Username = req.Form.Get("user") // username
@@ -165,22 +165,23 @@ func handler(w http.ResponseWriter, req *http.Request) {
 			u.Surname = req.Form.Get("surname")
 			u.Email = req.Form.Get("email")
 			u.Password = req.Form.Get("pass")
-			//u.Salt = make([]byte, 16)                  // sal (16 bytes == 128 bits)
-			//rand.Read(u.Salt)                          // la sal es aleatoria
-			//u.Data = make(map[string]string)           // reservamos mapa de datos de usuario
-			//u.Data["private"] = req.Form.Get("prikey") // clave privada
-			//u.Data["public"] = req.Form.Get("pubkey")  // clave pública
-			//password := decode64(req.Form.Get("pass")) // contraseña (keyLogin)
-
-			code, userJSON := createUser(u.Username, u.Password, u.Name, u.Surname, u.Email)
-
-			fmt.Println(code)
-			fmt.Println(userJSON)
+			u.Salt = make([]byte, 16)                  // sal (16 bytes == 128 bits)
+			rand.Read(u.Salt)                          // la sal es aleatoria
+			u.Data = make(map[string]string)           // reservamos mapa de datos de usuario
+			u.Data["private"] = req.Form.Get("prikey") // clave privada
+			u.Data["public"] = req.Form.Get("pubkey")  // clave pública
+			password := decode64(req.Form.Get("pass")) // contraseña (keyLogin)
 
 			// "hasheamos" la contraseña con scrypt
-			//u.Hash, _ = scrypt.Key(password, u.Salt, 16384, 8, 1, 32)
+			u.Hash, _ = scrypt.Key(password, u.Salt, 16384, 8, 1, 32)
 
-			response(w, true, "Usuario registrado")
+			code, _ := createUser(u.Username, u.Password, hex.EncodeToString(u.Hash), hex.EncodeToString(u.Salt), u.Name, u.Surname, u.Email)
+
+			if code == 1 {
+				response(w, true, "Usuario registrado")
+			} else {
+				response(w, true, "Usuario no se ha podido registrar")
+			}
 		} else {
 			response(w, false, "Usuario ya registrado")
 		}

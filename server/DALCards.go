@@ -26,7 +26,7 @@ func createCard(pan string, ccv string, month int, year int, owner string) (int,
 
 	defer db.Close()
 
-	code, msg = findUser(owner)
+	code, msg, _ = findUser(owner)
 
 	if code == 1 {
 		var query = "INSERT INTO cards(pan, ccv, expiry, `owner`) VALUES ('" + pan + "', '" + ccv + "', '" + strconv.Itoa(year) + "/" + strconv.Itoa(month) + "/00', '" + owner + "');"
@@ -70,7 +70,7 @@ func findCardByPAN(owner string, pan string) (int, string) {
 
 	defer db.Close()
 
-	code, msg = findUser(owner)
+	code, msg, _ = findUser(owner)
 
 	if code == 1 {
 		var query = "SELECT * FROM cards WHERE owner='" + owner + "' AND pan='" + pan + "';"
@@ -123,7 +123,7 @@ func findCardByID(owner string, id int) (int, string) {
 
 	defer db.Close()
 
-	code, msg = findUser(owner)
+	code, msg, _ = findUser(owner)
 
 	if code == 1 {
 		var query = "SELECT * FROM cards WHERE owner='" + owner + "' AND id=" + strconv.Itoa(id) + ";"
@@ -176,7 +176,7 @@ func getUserCards(owner string) (int, string) {
 
 	defer db.Close()
 
-	code, msg = findUser(owner)
+	code, msg, _ = findUser(owner)
 
 	if code == 1 {
 		var query = "SELECT * FROM cards WHERE owner='" + owner + "';"
@@ -236,7 +236,7 @@ func updateCard(pan string, ccv string, month int, year int, owner string, oldPA
 
 	defer db.Close()
 
-	code, msg = findUser(owner)
+	code, msg, _ = findUser(owner)
 
 	if code == 1 {
 		code, msg = findCardByPAN(owner, pan)
@@ -287,7 +287,7 @@ func deleteCard(pan string, owner string) (int, string) {
 
 	defer db.Close()
 
-	code, msg = findUser(owner)
+	code, msg, _ = findUser(owner)
 
 	if code == 1 {
 		code, msg = findCardByPAN(owner, pan)
