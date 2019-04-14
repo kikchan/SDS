@@ -4,10 +4,7 @@ import (
 	"bytes"
 	"crypto/rand"
 	"encoding/base64"
-	"encoding/hex"
 	"encoding/json"
-	"fmt"
-	"io"
 	"net/http"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -40,6 +37,11 @@ type user struct {
 	Data     map[string]string // datos adicionales del usuario
 }
 
+// función para codificar de []bytes a string (Base64)
+func encode64(data []byte) string {
+	return base64.StdEncoding.EncodeToString(data) // sólo utiliza caracteres "imprimibles"
+}
+
 // función para decodificar de string a []bytes (Base64)
 func decode64(s string) []byte {
 	b, err := base64.StdEncoding.DecodeString(s) // recupera el formato original
@@ -54,7 +56,10 @@ type resp struct {
 }
 
 // función para escribir una respuesta del servidor
-func response(w io.Writer, ok bool, msg string) {
+func response(w http.ResponseWriter, ok bool, msg string) {
+	if ok == false {
+		w.WriteHeader(404)
+	}
 	r := resp{Ok: ok, Msg: msg}    // formateamos respuesta
 	rJSON, err := json.Marshal(&r) // codificamos en JSON
 	chk(err)                       // comprobamos error
@@ -65,8 +70,6 @@ var usersBD []user
 
 func main() {
 	//var port = "8080"
-
-	//HACER SELECT DE LA BD E INTRODUCIR USUARIOS EN usersBD
 
 	/*******************************************************************************
 	********* Los comentarios en inglés, por favor *********************************
@@ -94,14 +97,10 @@ func handler(w http.ResponseWriter, req *http.Request) {
 
 	switch req.Form.Get("cmd") { // comprobamos comando desde el cliente
 	case "login": // ** login
-		var user user
-		fmt.Println(req.Form.Get("cmd"))
-		code, _, user := findUser(req.Form.Get("user"))
-
-		fmt.Println(code)
+		_, _, user := findUser(req.Form.Get("user"))
 
 		password := decode64(req.Form.Get("pass")) // obtenemos la contraseña
-		fmt.Println(password)
+
 		hash, _ := scrypt.Key(password, user.Salt, 16384, 8, 1, 32) // scrypt(contraseña)
 		if bytes.Compare(user.Hash, hash) != 0 {                    // comparamos
 			response(w, false, "Credenciales inválidas")
@@ -129,16 +128,19 @@ func handler(w http.ResponseWriter, req *http.Request) {
 			// "hasheamos" la contraseña con scrypt
 			u.Hash, _ = scrypt.Key(password, u.Salt, 16384, 8, 1, 32)
 
-			code, _ := createUser(u.Username, u.Password, hex.EncodeToString(u.Hash), hex.EncodeToString(u.Salt), u.Name, u.Surname, u.Email)
+			code, _ := createUser(u.Username, u.Password, encode64(u.Hash), encode64(u.Salt), u.Name, u.Surname, u.Email)
 
 			if code == 1 {
 				response(w, true, "Usuario registrado")
+
 			} else {
 				response(w, true, "Usuario no se ha podido registrar")
 			}
 		} else {
 			response(w, false, "Usuario ya registrado")
 		}
+	case "viewPassword": // ** View Password
+
 	default:
 		response(w, false, "Comando inválido")
 	}

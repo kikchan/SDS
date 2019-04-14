@@ -57,6 +57,12 @@ func chk(e error) {
 	Data map[string]string // datos adicionales del usuario
 }*/
 
+// respuesta del servidor
+type resp struct {
+	Ok  bool   // true -> correcto, false -> error
+	Msg string // mensaje adicional
+}
+
 // función para cifrar (con AES en este caso), adjunta el IV al principio
 func encrypt(data, key []byte) (out []byte) {
 	out = make([]byte, len(data)+16)    // reservamos espacio para el IV al principio
@@ -177,7 +183,10 @@ func main() {
 			r, err := client.PostForm("https://localhost:8080", data)
 			chk(err)
 			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
-			fmt.Println()
+
+			if r.StatusCode == 200 {
+				logueado(&data)
+			}
 		case 2:
 			var username string
 			var password string
@@ -214,6 +223,50 @@ func main() {
 			fmt.Println()
 		default:
 			fmt.Println("No prefieres ninguno de ellos")
+		}
+	}
+}
+
+func menuLogueado(eleccion *int) {
+	menuLogueado :=
+		`
+		Bienvenido
+		[ 1 ] Añadir contraseña de sitio web
+		[ 2 ] Ver contraseña de sitio web
+		[ 3 ] Añadir tarjeta de crédito
+		[ 4 ] Ver tarjetas de crédito
+		[ 5 ] Eliminar tu usuario
+		[ 6 ] Cerrar sesión
+		¿Qué prefieres?
+
+	`
+	fmt.Print(menuLogueado)
+	fmt.Scanln(eleccion)
+}
+
+func logueado(data *url.Values) {
+	var eleccion int
+	menuLogueado(&eleccion)
+
+	for {
+
+		switch eleccion {
+		case 1: //Add password
+
+		case 2: //View password
+
+		case 3:
+
+		case 4:
+
+		case 5:
+
+		case 6:
+			fmt.Println("Hasta la vista.")
+			return
+		default:
+			fmt.Println("No has seleccionado una opcion correcta.")
+
 		}
 	}
 }

@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"encoding/hex"
 	"strconv"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -88,8 +87,8 @@ func findUser(username string) (int, string, user) {
 		msg = a + " " + b + " " + c + " " + d + " " + e + " " + " " + f + " " + g
 		user.Username = a
 		user.Password = b
-		user.Hash, _ = hex.DecodeString(c)
-		user.Salt, _ = hex.DecodeString(d)
+		user.Hash = decode64(c)
+		user.Salt = decode64(d)
 		user.Name = e
 		user.Surname = f
 		user.Email = g
