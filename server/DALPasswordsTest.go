@@ -17,4 +17,12 @@ func DALPasswordsTest() {
 	fmt.Println("Create a password for a non-existing user")
 	code, msg = createPassword("jose", "qwerty", "juancarlos")
 	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
+
+	fmt.Println("Search for an existing password of an existing user")
+	code, msg = findPasswordByID("jose", 1)
+	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
+
+	fmt.Println("Search for a nong-existing password")
+	code, msg = findPasswordByID("kiril", 1)
+	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
 }

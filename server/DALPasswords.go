@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"strconv"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -51,10 +52,10 @@ func createPassword(username string, pass string, user string) (int, string) {
 }
 
 /*
-	READ a note by its ID
+	READ a password given its ID
 	Returns:
 		1: OK
-	   -1: Invalid note
+	   -1: Invalid password
 	   -2: Error executing query
 	   -3: Error connecting to DB
 */
@@ -73,47 +74,49 @@ func findPasswordByID(user string, id int) (int, string) {
 	code, msg = findUser(user)
 
 	if code == 1 {
-		var query = "SELECT * FROM notes WHERE user='" + user + "' AND id=" + strconv.Itoa(id) + ";"
-		writeLog(user, "findNoteByID", query)
+		var query = "SELECT * FROM passwords WHERE user='" + user + "' AND id=" + strconv.Itoa(id) + ";"
+		writeLog(user, "findPasswordByID", query)
 
 		read, err := db.Query(query)
 		if err != nil {
 			code = -2
 			msg = err.Error()
+
+			fmt.Println(err.Error())
 		}
 
 		defer read.Close()
 
 		if read.Next() {
-			var a, b, c, d string
+			var a, b, c, d, e string
 
-			err = read.Scan(&a, &b, &c, &d)
+			err = read.Scan(&a, &b, &c, &d, &e)
 
 			code = 1
-			msg = a + " " + b + " " + c + " " + d
+			msg = a + " " + b + " " + c + " " + d + " " + e
 		} else {
 			code = -1
-			msg = "Invalid note"
+			msg = "No password was found"
 		}
 	}
 
-	writeLog(user, "findNoteByID response", "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
+	writeLog(user, "findPasswordByID response", "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
 
 	return code, msg
 }
 
 /*
-	READ all notes
+	READ all passwords
 	Returns:
 		1: OK
-	   -1: The user doesn't have any notes
+	   -1: The user doesn't have any passwords
 	   -2: Error executing query
 	   -3: Error connecting to DB
 */
 func getUserPasswords(user string) (int, string) {
 	var msg string
 	var code int
-	var notes []string
+	var passwords []string
 
 	db, err := sql.Open("mysql", DB_Username+":"+DB_Password+"@"+DB_Protocol+"("+DB_IP+":"+DB_Port+")/"+DB_Name)
 	if err != nil {
@@ -126,9 +129,9 @@ func getUserPasswords(user string) (int, string) {
 	code, msg = findUser(user)
 
 	if code == 1 {
-		var query = "SELECT * FROM notes WHERE user='" + user + "';"
+		var query = "SELECT * FROM passwords WHERE user='" + user + "';"
 
-		writeLog(user, "getUserNotes", query)
+		writeLog(user, "getUserPasswords", query)
 
 		read, err := db.Query(query)
 		if err != nil {
@@ -144,23 +147,23 @@ func getUserPasswords(user string) (int, string) {
 			err = read.Scan(&a, &b, &c, &d)
 
 			code = 1
-			notes = append(notes, "["+a+" "+b+" "+c+" "+d+"]")
+			passwords = append(passwords, "["+a+" "+b+" "+c+" "+d+"]")
 		}
 
-		if len(notes) != 0 {
+		if len(passwords) != 0 {
 			code = 1
 			msg = ""
 
-			for i := 0; i < len(notes); i++ {
-				msg += notes[i]
+			for i := 0; i < len(passwords); i++ {
+				msg += passwords[i]
 			}
 		} else {
 			code = -1
-			msg = "The user has no notes"
+			msg = "The user has no passwords"
 		}
 	}
 
-	writeLog(user, "getUserNotes response", "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
+	writeLog(user, "getUserPasswords response", "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
 
 	return code, msg
 }
@@ -191,7 +194,7 @@ func updatePassword(id int, text string, user string) (int, string) {
 		code, msg = findNoteByID(user, id)
 
 		if code == 1 {
-			var query = "UPDATE notes SET text=\"" + text + "\" WHERE user='" + user + "' AND id=" + strconv.Itoa(id) + ";"
+			var query = "UPDATE passwords SET text=\"" + text + "\" WHERE user='" + user + "' AND id=" + strconv.Itoa(id) + ";"
 			writeLog(user, "updateNote", query)
 
 			update, err := db.Query(query)
@@ -241,7 +244,7 @@ func deletePassword(id int, user string) (int, string) {
 		code, msg = findNoteByID(user, id)
 
 		if code == 1 {
-			var query = "DELETE FROM notes WHERE user='" + user + "' AND id=" + strconv.Itoa(id) + ";"
+			var query = "DELETE FROM passwords WHERE user='" + user + "' AND id=" + strconv.Itoa(id) + ";"
 			writeLog(user, "deleteNote", query)
 
 			if code == 1 {
