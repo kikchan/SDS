@@ -22,7 +22,7 @@ func DALPasswordsTest() {
 	code, msg = findPasswordByID("jose", 1)
 	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
 
-	fmt.Println("Search for a nong-existing password")
+	fmt.Println("Search for a non-existing password")
 	code, msg = findPasswordByID("kiril", 1)
 	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
 }

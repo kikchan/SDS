@@ -58,6 +58,7 @@ func createPassword(username string, pass string, user string) (int, string) {
 	   -1: Invalid password
 	   -2: Error executing query
 	   -3: Error connecting to DB
+	   -4: Password not found
 */
 func findPasswordByID(user string, id int) (int, string) {
 	var msg string
@@ -95,8 +96,8 @@ func findPasswordByID(user string, id int) (int, string) {
 			code = 1
 			msg = a + " " + b + " " + c + " " + d + " " + e
 		} else {
-			code = -1
-			msg = "No password was found"
+			code = -4
+			msg = "The requested password was not found"
 		}
 	}
 

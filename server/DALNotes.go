@@ -57,6 +57,7 @@ func createNote(text string, user string) (int, string) {
 	   -1: Invalid note
 	   -2: Error executing query
 	   -3: Error connecting to DB
+	   -4: Note not found
 */
 func findNoteByID(user string, id int) (int, string) {
 	var msg string
@@ -92,8 +93,8 @@ func findNoteByID(user string, id int) (int, string) {
 			code = 1
 			msg = a + " " + b + " " + c + " " + d
 		} else {
-			code = -1
-			msg = "Invalid note"
+			code = -4
+			msg = "The requested note was not found"
 		}
 	}
 

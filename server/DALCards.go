@@ -56,6 +56,7 @@ func createCard(pan string, ccv string, month int, year int, owner string) (int,
 	   -1: Invalid card
 	   -2: Error executing query
 	   -3: Error connecting to DB
+	   -4: Card not found
 */
 func findCardByPAN(owner string, pan string) (int, string) {
 	var msg string
@@ -91,8 +92,8 @@ func findCardByPAN(owner string, pan string) (int, string) {
 			code = 1
 			msg = a + " " + b + " " + c + " " + d + " " + e + " "
 		} else {
-			code = -1
-			msg = "Invalid card"
+			code = -4
+			msg = "The requested card was not found"
 		}
 	}
 
@@ -108,6 +109,7 @@ func findCardByPAN(owner string, pan string) (int, string) {
 	   -1: Invalid card
 	   -2: Error executing query
 	   -3: Error connecting to DB
+	   -4: Card not found
 */
 func findCardByID(owner string, id int) (int, string) {
 	var msg string
@@ -143,8 +145,8 @@ func findCardByID(owner string, id int) (int, string) {
 			code = 1
 			msg = a + " " + b + " " + c + " " + d + " " + e
 		} else {
-			code = -1
-			msg = "Invalid card"
+			code = -4
+			msg = "The requested card was not found"
 		}
 	}
 
