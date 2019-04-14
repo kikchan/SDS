@@ -216,24 +216,4 @@ func main() {
 			fmt.Println("No prefieres ninguno de ellos")
 		}
 	}
-
-	/*
-		conn, err := net.Dial("tcp", "localhost:"+puerto) // llamamos al servidor
-		chk(err)
-		defer conn.Close() // es importante cerrar la conexión al finalizar
-
-		fmt.Println("Entrando en modo cliente...")
-		fmt.Println("conectado a ", conn.RemoteAddr())
-
-		menu()
-
-		keyscan := bufio.NewScanner(os.Stdin) // scanner para la entrada estándar (teclado)
-		netscan := bufio.NewScanner(conn)     // scanner para la conexión (datos desde el servidor)
-
-		for keyscan.Scan() { // escaneamos la entrada
-			fmt.Fprintln(conn, keyscan.Text())        // enviamos la entrada al servidor
-			netscan.Scan()                            // escaneamos la conexión
-			fmt.Println("servidor: ", netscan.Text()) // mostramos mensaje desde el servidor
-		}
-	*/
 }

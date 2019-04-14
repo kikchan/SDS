@@ -86,52 +86,6 @@ func main() {
 	// Para generar certificados autofirmados con openssl usar:
 	//    openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes -subj "/C=ES/ST=Alicante/L=Alicante/O=UA/OU=Org/CN=www.ua.com"
 	chk(http.ListenAndServeTLS(":8080", "cert.pem", "key.pem", nil))
-
-	/*
-
-		if len(os.Args) == 2 {
-			port = os.Args[1]
-			fmt.Println("Server awaiting connections from port: " + port)
-		} else {
-			fmt.Println("Server awaiting connections from port: " + port + " (default)")
-		}
-
-		//Server is in listening mode
-		ln, err := net.Listen("tcp", "localhost:"+port)
-		chk(err)
-
-		defer ln.Close()
-
-		//Infinite loop
-		for {
-			//Accept every single user request
-			conn, err := ln.Accept()
-			chk(err)
-
-			//Launch a concurrent lambda function
-			go func() {
-				//Gets the user's port
-				_, port, err := net.SplitHostPort(conn.RemoteAddr().String())
-				chk(err)
-
-				fmt.Println("Connection: ", conn.LocalAddr(), " <--> ", conn.RemoteAddr())
-
-				scanner := bufio.NewScanner(conn)
-
-				//Scans the connection and reads the message
-				for scanner.Scan() {
-					//Print the user's message
-					fmt.Println("Client[", port, "]: ", scanner.Text())
-
-					//Send "ACK" to client
-					fmt.Fprintln(conn, "ack: ", scanner.Text())
-				}
-
-				conn.Close()
-				fmt.Println("Closed[", port, "]")
-			}()
-		}
-	*/
 }
 
 func handler(w http.ResponseWriter, req *http.Request) {
