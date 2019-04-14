@@ -27,6 +27,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -34,6 +35,8 @@ import (
 	//"net/http"
 	//"crypto/tls"
 	"io"
+
+	"github.com/sethvargo/go-password/password"
 )
 
 // función para comprobar errores (ahorra escritura)
@@ -252,6 +255,38 @@ func logueado(data *url.Values) {
 
 		switch eleccion {
 		case 1: //Add password
+			fmt.Print("Inserte URL: ")
+			var url string
+			fmt.Scanf("%s", &url)
+
+			fmt.Print("Inserte longitud de la contraseña: ")
+			var long int
+			fmt.Scanf("%d", &long)
+
+			fmt.Print("Inserte número de digitos de la contraseña: ")
+			var numDigitos int
+			fmt.Scanf("%d", &numDigitos)
+
+			fmt.Print("Inserte número de simbolos de la contraseña: ")
+			var numSimbolos int
+			fmt.Scanf("%d", &numSimbolos)
+
+			fmt.Print("¿Permitir mayúsculas y minusculas?(t/f): ")
+			var upperLower bool
+			fmt.Scanf("%t", &upperLower)
+
+			fmt.Print("¿Repetir carácteres?(t/f): ")
+			var repeatCharacers bool
+			fmt.Scanf("%t", &repeatCharacers)
+			// Generate a password that is 64 characters long with 10 digits, 10 symbols,
+			// allowing upper and lower case letters, disallowing repeat characters.
+			// upperLower = false es que permite
+			contraseña, err := password.Generate(long, numDigitos, numSimbolos, !upperLower, repeatCharacers)
+			if err != nil {
+				log.Fatal(err)
+			}
+			fmt.Printf("La contraseña generada es: ")
+			fmt.Println(contraseña)
 
 		case 2: //View password
 
