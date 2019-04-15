@@ -30,7 +30,7 @@ func createPassword(username string, pass string, user string, site string) (int
 	code, msg, _ = findUser(user)
 
 	if code == 1 {
-		var query = "INSERT INTO passwords(username, pass, date, user, site) VALUES ('" + username + "', '" + pass + "', NOW(), '" + user + "', '" + site + "');"
+		var query = "INSERT INTO passwords(username, pass, modified, user, site) VALUES ('" + username + "', '" + pass + "', NOW(), '" + user + "', '" + site + "');"
 		writeLog(user, "createPassword", query)
 
 		insert, err := db.Query(query)
@@ -257,7 +257,7 @@ func updatePassword(id int, username string, password string, user string) (int,
 		code, msg = findPasswordByID(user, id)
 
 		if code == 1 {
-			var query = "UPDATE passwords SET username=\"" + username + "\", pass=\"" + password + "\" WHERE user='" + user + "' AND id=" + strconv.Itoa(id) + ";"
+			var query = "UPDATE passwords SET username=\"" + username + "\", pass=\"" + password + "\", modified=NOW() WHERE user='" + user + "' AND id=" + strconv.Itoa(id) + ";"
 			writeLog(user, "updatePassword", query)
 
 			update, err := db.Query(query)
