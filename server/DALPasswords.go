@@ -142,12 +142,12 @@ func getUserPasswords(user string) (int, string) {
 		defer read.Close()
 
 		for read.Next() {
-			var a, b, c, d string
+			var a, b, c, d, e, f string
 
-			err = read.Scan(&a, &b, &c, &d)
+			err = read.Scan(&a, &b, &c, &d, &e, &f)
 
 			code = 1
-			passwords = append(passwords, "["+a+" "+b+" "+c+" "+d+"]")
+			passwords = append(passwords, "["+a+" "+b+" "+c+" "+d+" "+e+" "+f+"]")
 		}
 
 		if len(passwords) != 0 {

@@ -25,4 +25,12 @@ func DALPasswordsTest() {
 	fmt.Println("Search for a non-existing password")
 	code, msg = findPasswordByID("kiril", 1)
 	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
+
+	fmt.Println("Get user passwords")
+	code, msg = getUserPasswords("jose")
+	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
+
+	fmt.Println("Get passwords for a non-existing user")
+	code, msg = getUserPasswords("asdfasdfasdfasdf")
+	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
 }
