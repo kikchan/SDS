@@ -33,4 +33,8 @@ func DALPasswordsTest() {
 	fmt.Println("Get passwords for a non-existing user")
 	code, msg = getUserPasswords("asdfasdfasdfasdf")
 	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
+
+	fmt.Println("Get user passwords for site https://www.ua.es")
+	code, msg = getPasswordsBySite("jose", "https://www.ua.es")
+	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
 }

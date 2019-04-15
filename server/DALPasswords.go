@@ -169,6 +169,69 @@ func getUserPasswords(user string) (int, string) {
 }
 
 /*
+	READ all passwords
+	Returns:
+		1: OK
+	   -1: The user doesn't have any passwords
+	   -2: Error executing query
+	   -3: Error connecting to DB
+*/
+func getPasswordsBySite(user string, site string) (int, string) {
+	var msg string
+	var code int
+	var passwords []string
+
+	db, err := sql.Open("mysql", DB_Username+":"+DB_Password+"@"+DB_Protocol+"("+DB_IP+":"+DB_Port+")/"+DB_Name)
+	if err != nil {
+		code = -3
+		msg = err.Error()
+	}
+
+	defer db.Close()
+
+	code, msg, _ = findUser(user)
+
+	if code == 1 {
+		var query = "SELECT * FROM passwords WHERE user='" + user + "' AND site='" + site + "' ORDER BY site asc;"
+
+		writeLog(user, "getUserPasswords", query)
+
+		read, err := db.Query(query)
+		if err != nil {
+			code = -2
+			msg = err.Error()
+		}
+
+		defer read.Close()
+
+		for read.Next() {
+			var a, b, c, d, e, f string
+
+			err = read.Scan(&a, &b, &c, &d, &e, &f)
+
+			code = 1
+			passwords = append(passwords, "["+a+" "+b+" "+c+" "+d+" "+e+" "+f+"]")
+		}
+
+		if len(passwords) != 0 {
+			code = 1
+			msg = ""
+
+			for i := 0; i < len(passwords); i++ {
+				msg += passwords[i]
+			}
+		} else {
+			code = -1
+			msg = "The user has no passwords"
+		}
+	}
+
+	writeLog(user, "getUserPasswords response", "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
+
+	return code, msg
+}
+
+/*
 	UPDATE
 	Returns:
 		1: OK
