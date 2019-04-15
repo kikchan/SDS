@@ -15,7 +15,7 @@ import (
 	   -2: Error executing query
 	   -3: Error connecting to DB
 */
-func createPassword(username string, pass string, user string) (int, string) {
+func createPassword(username string, pass string, user string, site string) (int, string) {
 	var msg string
 	var code int
 
@@ -30,7 +30,7 @@ func createPassword(username string, pass string, user string) (int, string) {
 	code, msg, _ = findUser(user)
 
 	if code == 1 {
-		var query = "INSERT INTO passwords(username, pass, date, user) VALUES ('" + username + "', '" + pass + "', NOW(), '" + user + "');"
+		var query = "INSERT INTO passwords(username, pass, date, user, site) VALUES ('" + username + "', '" + pass + "', NOW(), '" + user + "', '" + site + "');"
 		writeLog(user, "createPassword", query)
 
 		insert, err := db.Query(query)
@@ -88,12 +88,12 @@ func findPasswordByID(user string, id int) (int, string) {
 		defer read.Close()
 
 		if read.Next() {
-			var a, b, c, d, e string
+			var a, b, c, d, e, f string
 
-			err = read.Scan(&a, &b, &c, &d, &e)
+			err = read.Scan(&a, &b, &c, &d, &e, &f)
 
 			code = 1
-			msg = a + " " + b + " " + c + " " + d + " " + e
+			msg = a + " " + b + " " + c + " " + d + " " + e + " " + f
 		} else {
 			code = -1
 			msg = "The requested password was not found"
@@ -129,7 +129,7 @@ func getUserPasswords(user string) (int, string) {
 	code, msg, _ = findUser(user)
 
 	if code == 1 {
-		var query = "SELECT * FROM passwords WHERE user='" + user + "';"
+		var query = "SELECT * FROM passwords WHERE user='" + user + "' ORDER BY site asc;"
 
 		writeLog(user, "getUserPasswords", query)
 
