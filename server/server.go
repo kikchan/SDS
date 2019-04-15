@@ -81,7 +81,7 @@ func main() {
 	//DALUsersTest()
 	//DALCardsTest()
 	//DALNotesTest()
-	//DALPasswordsTest()
+	DALPasswordsTest()
 
 	http.HandleFunc("/", handler) // asignamos un handler global
 
