@@ -304,11 +304,11 @@ func deletePassword(id int, user string) (int, string) {
 	code, msg, _ = findUser(user)
 
 	if code == 1 {
-		code, msg = findNoteByID(user, id)
+		code, msg = findPasswordByID(user, id)
 
 		if code == 1 {
 			var query = "DELETE FROM passwords WHERE user='" + user + "' AND id=" + strconv.Itoa(id) + ";"
-			writeLog(user, "deleteNote", query)
+			writeLog(user, "deletePassword", query)
 
 			if code == 1 {
 				delete, err := db.Query(query)
@@ -317,18 +317,18 @@ func deletePassword(id int, user string) (int, string) {
 					msg = err.Error()
 				} else {
 					code = 1
-					msg = "Note deleted: " + strconv.Itoa(id)
+					msg = "Password deleted: " + strconv.Itoa(id)
 
 					defer delete.Close()
 				}
 			} else {
 				code = -1
-				msg = "Invalid password"
+				msg = "Invalid id: " + strconv.Itoa(id)
 			}
 		}
 	}
 
-	writeLog(user, "deleteNote response", "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
+	writeLog(user, "deletePassword response", "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
 
 	return code, msg
 }

@@ -41,4 +41,8 @@ func DALPasswordsTest() {
 	fmt.Println("Update password 19 to jose1 and 123456")
 	code, msg = updatePassword(19, "jose1", "123456", "jose")
 	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
+
+	fmt.Println("Delete last password for jose")
+	code, msg = deletePassword(28, "jose")
+	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
 }
