@@ -106,7 +106,7 @@ func findPasswordByID(user string, id int) (int, string) {
 }
 
 /*
-	READ all passwords
+	READ all passwords for a given user
 	Returns:
 		1: OK
 	   -1: The user doesn't have any passwords
@@ -169,7 +169,7 @@ func getUserPasswords(user string) (int, string) {
 }
 
 /*
-	READ all passwords
+	READ all passwords for a given user filtered and ordered by a specific site
 	Returns:
 		1: OK
 	   -1: The user doesn't have any passwords
@@ -194,7 +194,7 @@ func getPasswordsBySite(user string, site string) (int, string) {
 	if code == 1 {
 		var query = "SELECT * FROM passwords WHERE user='" + user + "' AND site='" + site + "' ORDER BY site asc;"
 
-		writeLog(user, "getUserPasswords", query)
+		writeLog(user, "getPasswordsBySite", query)
 
 		read, err := db.Query(query)
 		if err != nil {
@@ -226,7 +226,7 @@ func getPasswordsBySite(user string, site string) (int, string) {
 		}
 	}
 
-	writeLog(user, "getUserPasswords response", "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
+	writeLog(user, "getPasswordsBySite response", "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
 
 	return code, msg
 }
@@ -235,11 +235,11 @@ func getPasswordsBySite(user string, site string) (int, string) {
 	UPDATE
 	Returns:
 		1: OK
-	   -1: Invalid note
+	   -1: Invalid password
 	   -2: Error executing query
 	   -3: Error connecting to DB
 */
-func updatePassword(id int, text string, user string) (int, string) {
+func updatePassword(id int, username string, password string, user string) (int, string) {
 	var msg string
 	var code int
 
@@ -254,11 +254,11 @@ func updatePassword(id int, text string, user string) (int, string) {
 	code, msg, _ = findUser(user)
 
 	if code == 1 {
-		code, msg = findNoteByID(user, id)
+		code, msg = findPasswordByID(user, id)
 
 		if code == 1 {
-			var query = "UPDATE passwords SET text=\"" + text + "\" WHERE user='" + user + "' AND id=" + strconv.Itoa(id) + ";"
-			writeLog(user, "updateNote", query)
+			var query = "UPDATE passwords SET username=\"" + username + "\", pass=\"" + password + "\" WHERE user='" + user + "' AND id=" + strconv.Itoa(id) + ";"
+			writeLog(user, "updatePassword", query)
 
 			update, err := db.Query(query)
 			if err != nil {
@@ -266,17 +266,17 @@ func updatePassword(id int, text string, user string) (int, string) {
 				msg = err.Error()
 			} else {
 				code = 1
-				msg = "Note modified: " + strconv.Itoa(id)
+				msg = "Password modified: " + strconv.Itoa(id)
 
 				defer update.Close()
 			}
 		} else {
 			code = -1
-			msg = "Invalid note: " + strconv.Itoa(id)
+			msg = "Invalid password: " + strconv.Itoa(id)
 		}
 	}
 
-	writeLog(user, "updateNote response", "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
+	writeLog(user, "updatePassword response", "[Result]: code: "+strconv.Itoa(code)+" ## msg: "+msg)
 
 	return code, msg
 }
@@ -285,7 +285,7 @@ func updatePassword(id int, text string, user string) (int, string) {
 	DELETE
 	Returns:
 		1: OK
-	   -1: Invalid note
+	   -1: Invalid password
 	   -2: Error executing query
 	   -3: Error connecting to DB
 */
@@ -323,7 +323,7 @@ func deletePassword(id int, user string) (int, string) {
 				}
 			} else {
 				code = -1
-				msg = "Invalid note"
+				msg = "Invalid password"
 			}
 		}
 	}

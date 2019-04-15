@@ -37,4 +37,8 @@ func DALPasswordsTest() {
 	fmt.Println("Get user passwords for site https://www.ua.es")
 	code, msg = getPasswordsBySite("jose", "https://www.ua.es")
 	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
+
+	fmt.Println("Update password 19 to jose1 and 123456")
+	code, msg = updatePassword(19, "jose1", "123456", "jose")
+	fmt.Println("(code: " + strconv.Itoa(code) + ", \tmsg: " + msg + ")")
 }
