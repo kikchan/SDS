@@ -188,7 +188,7 @@ func main() {
 			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
 
 			if r.StatusCode == 200 {
-				logueado(&data)
+				logueado(client, username)
 			}
 		case 2:
 			var username string
@@ -247,17 +247,24 @@ func menuLogueado(eleccion *int) {
 	fmt.Scanln(eleccion)
 }
 
-func logueado(data *url.Values) {
+func logueado(client *http.Client, username string) {
 	var eleccion int
 	menuLogueado(&eleccion)
 
 	for {
-
 		switch eleccion {
-		case 1: //Add password
+		case 1: //addPassword
+			data := url.Values{} // estructura para contener los valores
+
+			data.Set("cmd", "addPassword") // comando (string)
+
 			fmt.Print("Inserte URL: ")
 			var url string
 			fmt.Scanf("%s", &url)
+
+			fmt.Print("Inserte usuario: ")
+			var user string
+			fmt.Scanf("%s", &user)
 
 			fmt.Print("Inserte longitud de la contraseña: ")
 			var long int
@@ -288,10 +295,52 @@ func logueado(data *url.Values) {
 			fmt.Printf("La contraseña generada es: ")
 			fmt.Println(contraseña)
 
+			data.Set("username", username) // usuario (string)
+			data.Set("user", user)
+			data.Set("site", url)
+			data.Set("contraseña", contraseña)
+
+			r, err := client.PostForm("https://localhost:8080", data) // enviamos por POST
+			chk(err)
+			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
+			fmt.Println()
+
+			return
 		case 2: //View password
 
-		case 3:
+		case 3: //Add credit card
+			data := url.Values{} // estructura para contener los valores
 
+			data.Set("cmd", "addCreditCard") // comando (string)
+
+			fmt.Print("Inserte número de la tarjeta: ")
+			var pan string
+			fmt.Scanf("%s", &pan)
+
+			fmt.Print("Inserte CCV: ")
+			var ccv string
+			fmt.Scanf("%s", &ccv)
+
+			fmt.Print("Inserte mes de caducidad: ")
+			var month string
+			fmt.Scanf("%s", &month)
+
+			fmt.Print("Inserte año de caducidad: ")
+			var year string
+			fmt.Scanf("%s", &year)
+
+			data.Set("username", username) // usuario (string)
+			data.Set("pan", pan)
+			data.Set("ccv", ccv)
+			data.Set("month", month)
+			data.Set("year", year)
+
+			r, err := client.PostForm("https://localhost:8080", data) // enviamos por POST
+			chk(err)
+			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
+			fmt.Println()
+
+			return
 		case 4:
 
 		case 5:

@@ -5,7 +5,9 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"strconv"
 
 	_ "github.com/go-sql-driver/mysql"
 	"golang.org/x/crypto/scrypt"
@@ -141,6 +143,37 @@ func handler(w http.ResponseWriter, req *http.Request) {
 		}
 	case "viewPassword": // ** View Password
 
+	case "addPassword": // ** Add Password
+		_, _, username := findUser(req.Form.Get("username"))
+
+		user := req.Form.Get("user")
+		site := req.Form.Get("site")
+		contraseña := req.Form.Get("contraseña")
+
+		code, _ := createPassword(user, contraseña, username.Username, site)
+
+		if code == 1 {
+			fmt.Println("Contraseña guardada con éxito.")
+		}
+
+	case "addCreditCard": // ** Add credit card
+		_, _, username := findUser(req.Form.Get("username"))
+
+		pan := req.Form.Get("pan")
+		ccv := req.Form.Get("ccv")
+		monthString := req.Form.Get("month")
+		yearString := req.Form.Get("year")
+
+		month, _ := strconv.Atoi(monthString)
+		year, _ := strconv.Atoi(yearString)
+
+		code, _ := createCard(pan, ccv, month, year, username.Username)
+
+		if code == 1 {
+			fmt.Println("Tarjeta de crédito guardada con éxito.")
+		}
+
+		return
 	default:
 		response(w, false, "Comando inválido")
 	}
