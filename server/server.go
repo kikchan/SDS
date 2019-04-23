@@ -174,6 +174,19 @@ func handler(w http.ResponseWriter, req *http.Request) {
 		}
 
 		return
+
+	case "deleteUser":
+		_, _, username := findUser(req.Form.Get("username"))
+
+		code, _ := deleteUser(username.Username)
+
+		if code == 1 {
+			fmt.Println("Usuario eliminado con éxito.")
+		} else {
+			fmt.Println("El usuario no se puede eliminar.")
+		}
+
+		return
 	default:
 		response(w, false, "Comando inválido")
 	}

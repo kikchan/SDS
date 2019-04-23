@@ -344,6 +344,16 @@ func logueado(client *http.Client, username string) {
 		case 4:
 
 		case 5:
+			data := url.Values{} // estructura para contener los valores
+
+			data.Set("cmd", "deleteUser") // comando (string)
+
+			data.Set("username", username) // usuario (string)
+
+			r, err := client.PostForm("https://localhost:8080", data) // enviamos por POST
+			chk(err)
+			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
+			fmt.Println()
 
 		case 6:
 			fmt.Println("Hasta la vista.")
