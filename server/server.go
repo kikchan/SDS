@@ -18,8 +18,8 @@ var DB_IP string = "185.207.145.237"
 var DB_Port string = "3306"
 var DB_Protocol string = "tcp"
 var DB_Name string = "sds"
-var DB_Username string = "sds"
-var DB_Password string = "sds"
+var DB_Username string = "sdsAppClient"
+var DB_Password string = "qwerty123456"
 
 //Error check function
 func chk(e error) {
