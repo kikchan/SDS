@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 
 	_ "github.com/go-sql-driver/mysql"
 	"golang.org/x/crypto/scrypt"
@@ -17,7 +16,7 @@ import (
 var DB_IP string = "185.207.145.237"
 var DB_Port string = "3306"
 var DB_Protocol string = "tcp"
-var DB_Name string = "sds"
+var DB_Name string = "sds2"
 var DB_Username string = "sdsAppClient"
 var DB_Password string = "qwerty123456"
 
@@ -29,14 +28,18 @@ func chk(e error) {
 }
 
 type user struct {
+	ID       int
 	Username string
 	Password string
 	Hash     []byte // hash de la contraseña
 	Salt     []byte // sal para la contraseña
-	Name     string
-	Surname  string
-	Email    string
-	Data     map[string]string // datos adicionales del usuario
+	Data     string
+
+	//Cambios a partir de aquí. Yo quitaría estos campos.
+	Name    string
+	Surname string
+	Email   string
+	DataOld map[string]string // datos adicionales del usuario
 }
 
 // función para codificar de []bytes a string (Base64)
@@ -71,19 +74,18 @@ func response(w http.ResponseWriter, ok bool, msg string) {
 var usersBD []user
 
 func main() {
-	//var port = "8080"
+	if true {
+		fmt.Println(createUser("kiril", "123456", "hash", "salt", "data"))
+		fmt.Println(findUser("kiril"))
+		fmt.Println(deleteUser("kiril"))
+		fmt.Println(deleteUser("jose"))
 
-	/*******************************************************************************
-	********* Los comentarios en inglés, por favor *********************************
-	********************************************************************************
-	***************Comenta las líneas de abajo para que no te tarde la *************
-	********* vida ejecutando las pruebas ******************************************
-	********************************************************************************/
+		fmt.Println(createUser("kiril", "123456", "hash", "salt", "data"))
 
-	//DALUsersTest()
-	//DALCardsTest()
-	//DALNotesTest()
-	//DALPasswordsTest()
+		fmt.Println(updatePassword("kiril", "contraseña"))
+		fmt.Println(updateCard("kiril", "tarjeta"))
+		fmt.Println(updateNote("kiril", "nota"))
+	}
 
 	http.HandleFunc("/", handler) // asignamos un handler global
 
@@ -120,17 +122,28 @@ func handler(w http.ResponseWriter, req *http.Request) {
 			u.Surname = req.Form.Get("surname")
 			u.Email = req.Form.Get("email")
 			u.Password = req.Form.Get("pass")
-			u.Salt = make([]byte, 16)                  // sal (16 bytes == 128 bits)
-			rand.Read(u.Salt)                          // la sal es aleatoria
-			u.Data = make(map[string]string)           // reservamos mapa de datos de usuario
-			u.Data["private"] = req.Form.Get("prikey") // clave privada
-			u.Data["public"] = req.Form.Get("pubkey")  // clave pública
-			password := decode64(req.Form.Get("pass")) // contraseña (keyLogin)
+			u.Salt = make([]byte, 16) // sal (16 bytes == 128 bits)
+			rand.Read(u.Salt)         // la sal es aleatoria
+
+			//----------------------------------------------------
+			//		Aquí he cambiado u.Data por u.DataOld para que compile
+			u.DataOld = make(map[string]string)           // reservamos mapa de datos de usuario
+			u.DataOld["private"] = req.Form.Get("prikey") // clave privada
+			u.DataOld["public"] = req.Form.Get("pubkey")  // clave pública
+			password := decode64(req.Form.Get("pass"))    // contraseña (keyLogin)
 
 			// "hasheamos" la contraseña con scrypt
 			u.Hash, _ = scrypt.Key(password, u.Salt, 16384, 8, 1, 32)
 
-			code, _ := createUser(u.Username, u.Password, encode64(u.Hash), encode64(u.Salt), u.Name, u.Surname, u.Email)
+			//----------------------------------------------------
+			//		Código viejo
+			//
+			//code, _ := createUser(u.Username, u.Password, encode64(u.Hash), encode64(u.Salt), u.Name, u.Surname, u.Email)
+			//----------------------------------------------------
+
+			//----------------------------------------------------
+			//		Código nuevo
+			code, _ := createUser(u.Username, u.Password, encode64(u.Hash), encode64(u.Salt), u.Data)
 
 			if code == 1 {
 				response(w, true, "Usuario registrado")
@@ -144,34 +157,50 @@ func handler(w http.ResponseWriter, req *http.Request) {
 	case "viewPassword": // ** View Password
 
 	case "addPassword": // ** Add Password
-		_, _, username := findUser(req.Form.Get("username"))
+		/*
+			_, _, username := findUser(req.Form.Get("username"))
 
-		user := req.Form.Get("user")
-		site := req.Form.Get("site")
-		contraseña := req.Form.Get("contraseña")
+			user := req.Form.Get("user")
+			site := req.Form.Get("site")
+			contraseña := req.Form.Get("contraseña")
+		*/
 
-		code, _ := createPassword(user, contraseña, username.Username, site)
+		//----------------------------------------------------
+		//		Código viejo
+		//
+		//code, _ := createPassword(user, contraseña, username.Username, site)
+		//
+		//		Hay que meter los datos de la estructura en el campo data
+		//----------------------------------------------------
 
-		if code == 1 {
-			fmt.Println("Contraseña guardada con éxito.")
-		}
+		//if code == 1 {
+		//	fmt.Println("Contraseña guardada con éxito.")
+		//}
 
 	case "addCreditCard": // ** Add credit card
-		_, _, username := findUser(req.Form.Get("username"))
+		/*
+			_, _, username := findUser(req.Form.Get("username"))
 
-		pan := req.Form.Get("pan")
-		ccv := req.Form.Get("ccv")
-		monthString := req.Form.Get("month")
-		yearString := req.Form.Get("year")
+			pan := req.Form.Get("pan")
+			ccv := req.Form.Get("ccv")
+			monthString := req.Form.Get("month")
+			yearString := req.Form.Get("year")
 
-		month, _ := strconv.Atoi(monthString)
-		year, _ := strconv.Atoi(yearString)
+			month, _ := strconv.Atoi(monthString)
+			year, _ := strconv.Atoi(yearString)
+		*/
 
-		code, _ := createCard(pan, ccv, month, year, username.Username)
+		//----------------------------------------------------
+		//		Código viejo
+		//
+		//code, _ := createCard(pan, ccv, month, year, username.Username)
+		//
+		//		Hay que meter los datos de la estructura en el campo data
+		//----------------------------------------------------
 
-		if code == 1 {
-			fmt.Println("Tarjeta de crédito guardada con éxito.")
-		}
+		//if code == 1 {
+		//	fmt.Println("Tarjeta de crédito guardada con éxito.")
+		//}
 
 		return
 
