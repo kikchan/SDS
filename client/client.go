@@ -185,7 +185,7 @@ func main() {
 			data.Set("pass", encode64(keyLogin)) // contraseña (a base64 porque es []byte)
 			r, err := client.PostForm("https://localhost:8080", data)
 			chk(err)
-			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
+			//io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
 
 			if r.StatusCode == 200 {
 				logueado(client, username)
@@ -230,7 +230,7 @@ func main() {
 	}
 }
 
-func menuLogueado(eleccion *int) {
+func menuLogueado(eleccion *int, username string) {
 	menuLogueado :=
 		`		
 		[ 1 ] Gestionar contraseñas de sitios web
@@ -240,13 +240,15 @@ func menuLogueado(eleccion *int) {
 		[ 5 ] Cerrar sesión
 		¿Qué prefieres?
 	`
+	fmt.Println()
+	fmt.Print(fmt.Sprintf("Bienvenido %s.", username))
 	fmt.Print(menuLogueado)
 	fmt.Scanln(eleccion)
 }
 
 func logueado(client *http.Client, username string) {
 	var eleccion int
-	menuLogueado(&eleccion)
+	menuLogueado(&eleccion, username)
 
 	for {
 		switch eleccion {
