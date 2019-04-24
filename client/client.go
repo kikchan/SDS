@@ -232,16 +232,13 @@ func main() {
 
 func menuLogueado(eleccion *int) {
 	menuLogueado :=
-		`
-		Bienvenido
-		[ 1 ] Añadir contraseña de sitio web
-		[ 2 ] Ver contraseña de sitio web
-		[ 3 ] Añadir tarjeta de crédito
-		[ 4 ] Ver tarjetas de crédito
-		[ 5 ] Eliminar tu usuario
-		[ 6 ] Cerrar sesión
+		`		
+		[ 1 ] Gestionar contraseñas de sitios web
+		[ 2 ] Gestionar tarjetas de cŕedito
+		[ 3 ] Gestionar notas
+		[ 4 ] Eliminar tu usuario
+		[ 5 ] Cerrar sesión
 		¿Qué prefieres?
-
 	`
 	fmt.Print(menuLogueado)
 	fmt.Scanln(eleccion)
@@ -250,6 +247,57 @@ func menuLogueado(eleccion *int) {
 func logueado(client *http.Client, username string) {
 	var eleccion int
 	menuLogueado(&eleccion)
+
+	for {
+		switch eleccion {
+		case 1: //GestionContraseñas
+			gestionContraseñas(client, username)
+
+		case 2: //GestionCard
+			gestionTarjetas(client, username)
+
+		case 3: //GestionNote
+			gestionNotas(client, username)
+
+		case 4:
+			data := url.Values{} // estructura para contener los valores
+
+			data.Set("cmd", "deleteUser") // comando (string)
+
+			data.Set("username", username) // usuario (string)
+
+			r, err := client.PostForm("https://localhost:8080", data) // enviamos por POST
+			chk(err)
+			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
+			fmt.Println()
+
+		case 5:
+			fmt.Println("Hasta la vista.")
+			return
+
+		default:
+			fmt.Println("No has seleccionado una opcion correcta.")
+		}
+	}
+}
+
+func menuGestionContraseña(eleccion *int) {
+	menuGestionContraseña :=
+		`		
+		[ 1 ] Añadir contraseñas
+		[ 2 ] Listar contraseñas
+		[ 3 ] Modificar contraseñas
+		[ 4 ] Eliminar contraseñas
+		[ 5 ] Ir atrás
+		¿Qué prefieres?
+	`
+	fmt.Print(menuGestionContraseña)
+	fmt.Scanln(eleccion)
+}
+
+func gestionContraseñas(client *http.Client, username string) {
+	var eleccion int
+	menuGestionContraseña(&eleccion)
 
 	for {
 		switch eleccion {
@@ -318,9 +366,42 @@ func logueado(client *http.Client, username string) {
 			fmt.Println()
 
 			return
-		case 2: //View password
+		case 2: //List password
 
-		case 3: //Add credit card
+		case 3: //Modify password
+
+		case 4: //Delete password
+
+		case 5:
+			return
+		default:
+			fmt.Println("No has seleccionado una opcion correcta.")
+
+		}
+	}
+}
+
+func menuGestionTarjetas(eleccion *int) {
+	menuGestionTarjetas :=
+		`		
+		[ 1 ] Añadir tarjeta	
+		[ 2 ] Listar tarjetas
+		[ 3 ] Modificar tarjeta
+		[ 4 ] Eliminar tarjeta
+		[ 5 ] Ir atrás
+		¿Qué prefieres?
+	`
+	fmt.Print(menuGestionTarjetas)
+	fmt.Scanln(eleccion)
+}
+
+func gestionTarjetas(client *http.Client, username string) {
+	var eleccion int
+	menuGestionTarjetas(&eleccion)
+
+	for {
+		switch eleccion {
+		case 1: //addCard
 			data := url.Values{} // estructura para contener los valores
 
 			data.Set("cmd", "addCreditCard") // comando (string)
@@ -353,23 +434,54 @@ func logueado(client *http.Client, username string) {
 			fmt.Println()
 
 			return
-		case 4:
+
+		case 2: //List cards
+
+		case 3: //Modify card
+
+		case 4: //Delete card
 
 		case 5:
-			data := url.Values{} // estructura para contener los valores
-
-			data.Set("cmd", "deleteUser") // comando (string)
-
-			data.Set("username", username) // usuario (string)
-
-			r, err := client.PostForm("https://localhost:8080", data) // enviamos por POST
-			chk(err)
-			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
-			fmt.Println()
-
-		case 6:
-			fmt.Println("Hasta la vista.")
 			return
+
+		default:
+			fmt.Println("No has seleccionado una opcion correcta.")
+
+		}
+	}
+}
+
+func menuGestionNotas(eleccion *int) {
+	menuGestionNotas :=
+		`		
+		[ 1 ] Añadir nota
+		[ 2 ] Listar notas
+		[ 3 ] Modificar nota		
+		[ 4 ] Eliminar nota
+		[ 5 ] Ir atrás
+		¿Qué prefieres?
+	`
+	fmt.Print(menuGestionNotas)
+	fmt.Scanln(eleccion)
+}
+
+func gestionNotas(client *http.Client, username string) {
+	var eleccion int
+	menuGestionNotas(&eleccion)
+
+	for {
+		switch eleccion {
+		case 1: //add note
+
+		case 2: //List notes
+
+		case 3: //Modify note
+
+		case 4: //Delete note
+
+		case 5:
+			return
+
 		default:
 			fmt.Println("No has seleccionado una opcion correcta.")
 
