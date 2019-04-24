@@ -266,32 +266,44 @@ func logueado(client *http.Client, username string) {
 			var user string
 			fmt.Scanf("%s", &user)
 
-			fmt.Print("Inserte longitud de la contraseña: ")
-			var long int
-			fmt.Scanf("%d", &long)
+			fmt.Print("¿Quieres generar una contraseña aleatoria?(s/n) ")
+			var opcion string
+			fmt.Scanf("%s", &opcion)
 
-			fmt.Print("Inserte número de digitos de la contraseña: ")
-			var numDigitos int
-			fmt.Scanf("%d", &numDigitos)
+			var contraseña string
+			if opcion == "s" {
+				fmt.Print("Inserte longitud de la contraseña: ")
+				var long int
+				fmt.Scanf("%d", &long)
 
-			fmt.Print("Inserte número de simbolos de la contraseña: ")
-			var numSimbolos int
-			fmt.Scanf("%d", &numSimbolos)
+				fmt.Print("Inserte número de digitos de la contraseña: ")
+				var numDigitos int
+				fmt.Scanf("%d", &numDigitos)
 
-			fmt.Print("¿Permitir mayúsculas y minusculas?(t/f): ")
-			var upperLower bool
-			fmt.Scanf("%t", &upperLower)
+				fmt.Print("Inserte número de simbolos de la contraseña: ")
+				var numSimbolos int
+				fmt.Scanf("%d", &numSimbolos)
 
-			fmt.Print("¿Repetir carácteres?(t/f): ")
-			var repeatCharacers bool
-			fmt.Scanf("%t", &repeatCharacers)
-			// Generate a password that is 64 characters long with 10 digits, 10 symbols,
-			// allowing upper and lower case letters, disallowing repeat characters.
-			// upperLower = false es que permite
-			contraseña, err := password.Generate(long, numDigitos, numSimbolos, !upperLower, repeatCharacers)
-			if err != nil {
-				log.Fatal(err)
+				fmt.Print("¿Permitir mayúsculas y minusculas?(t/f): ")
+				var upperLower bool
+				fmt.Scanf("%t", &upperLower)
+
+				fmt.Print("¿Repetir carácteres?(t/f): ")
+				var repeatCharacers bool
+				fmt.Scanf("%t", &repeatCharacers)
+				// Generate a password that is 64 characters long with 10 digits, 10 symbols,
+				// allowing upper and lower case letters, disallowing repeat characters.
+				// upperLower = false es que permite
+				contrasenyaa, err := password.Generate(long, numDigitos, numSimbolos, !upperLower, repeatCharacers)
+				if err != nil {
+					log.Fatal(err)
+				}
+				contraseña = contrasenyaa
+			} else {
+				fmt.Print("Introduce contraseña: ")
+				fmt.Scanf("%s", &contraseña)
 			}
+
 			fmt.Printf("La contraseña generada es: ")
 			fmt.Println(contraseña)
 

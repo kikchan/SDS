@@ -187,6 +187,7 @@ func handler(w http.ResponseWriter, req *http.Request) {
 		}
 
 		return
+
 	default:
 		response(w, false, "Comando inválido")
 	}
