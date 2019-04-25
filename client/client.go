@@ -494,6 +494,8 @@ func menuGestionNotas(eleccion *int) {
 }
 
 func gestionNotas(client *http.Client, username string) {
+	notas := make(map[int]notesData)
+
 	data := url.Values{} // estructura para contener los valores
 
 	data.Set("cmd", "Notes") // comando (string)
@@ -551,3 +553,28 @@ func gestionNotas(client *http.Client, username string) {
 		}
 	}
 }
+
+/*
+func main() {
+	m := make(map[int]string)
+	fmt.Println("Values in map (after creating): ", m)
+	m[0] = "ABC"
+	m[1] = "QR"
+	m[2] = "XYZ"
+
+	fmt.Println("Length of map: ", len(m))
+	fmt.Println("Values in map(after adding values): ", m)
+
+	m[1] = "LMN"
+	fmt.Println("Values in map (after updating): ", m)
+
+	delete(m, 1)
+	fmt.Println("Values in map: ", m)
+
+	for k, v := range m {
+		fmt.Println("Key :", k, " Value :", v)
+	}
+
+	fmt.Println("Value for not existing key : ", m[3])
+}
+*/
