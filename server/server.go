@@ -74,18 +74,20 @@ func response(w http.ResponseWriter, ok bool, msg string) {
 var usersBD []user
 
 func main() {
-	if true {
-		fmt.Println(createUser("kiril", "123456", "hash", "salt", "data"))
-		fmt.Println(findUser("kiril"))
-		fmt.Println(deleteUser("kiril"))
-		fmt.Println(deleteUser("jose"))
+	/*
+		if true {
+			fmt.Println(createUser("kiril", "123456", "hash", "salt", "data"))
+			fmt.Println(findUser("kiril"))
+			fmt.Println(deleteUser("kiril"))
+			fmt.Println(deleteUser("jose"))
 
-		fmt.Println(createUser("kiril", "123456", "hash", "salt", "data"))
+			fmt.Println(createUser("kiril", "123456", "hash", "salt", "data"))
 
-		fmt.Println(updatePassword("kiril", "contraseña"))
-		fmt.Println(updateCard("kiril", "tarjeta"))
-		fmt.Println(updateNote("kiril", "nota"))
-	}
+			fmt.Println(updatePassword("kiril", "contraseña"))
+			fmt.Println(updateCard("kiril", "tarjeta"))
+			fmt.Println(updateNote("kiril", "nota"))
+		}
+	*/
 
 	http.HandleFunc("/", handler) // asignamos un handler global
 
@@ -115,45 +117,45 @@ func handler(w http.ResponseWriter, req *http.Request) {
 
 	case "register": // ** registro
 		code, _, _ := findUser(req.Form.Get("user"))
-		if code == -1 {
-			u := user{}
-			u.Username = req.Form.Get("user") // username
-			u.Name = req.Form.Get("name")
-			u.Surname = req.Form.Get("surname")
-			u.Email = req.Form.Get("email")
-			u.Password = req.Form.Get("pass")
-			u.Salt = make([]byte, 16) // sal (16 bytes == 128 bits)
-			rand.Read(u.Salt)         // la sal es aleatoria
+		//if code == -1 { // ARREGLAR EL FINDUSER -- KIRIL
+		u := user{}
+		u.Username = req.Form.Get("user") // username
+		u.Name = req.Form.Get("name")
+		u.Surname = req.Form.Get("surname")
+		u.Email = req.Form.Get("email")
+		u.Password = req.Form.Get("pass")
+		u.Salt = make([]byte, 16) // sal (16 bytes == 128 bits)
+		rand.Read(u.Salt)         // la sal es aleatoria
 
-			//----------------------------------------------------
-			//		Aquí he cambiado u.Data por u.DataOld para que compile
-			u.DataOld = make(map[string]string)           // reservamos mapa de datos de usuario
-			u.DataOld["private"] = req.Form.Get("prikey") // clave privada
-			u.DataOld["public"] = req.Form.Get("pubkey")  // clave pública
-			password := decode64(req.Form.Get("pass"))    // contraseña (keyLogin)
+		//----------------------------------------------------
+		//		Aquí he cambiado u.Data por u.DataOld para que compile
+		u.DataOld = make(map[string]string)           // reservamos mapa de datos de usuario
+		u.DataOld["private"] = req.Form.Get("prikey") // clave privada
+		u.DataOld["public"] = req.Form.Get("pubkey")  // clave pública
+		password := decode64(req.Form.Get("pass"))    // contraseña (keyLogin)
 
-			// "hasheamos" la contraseña con scrypt
-			u.Hash, _ = scrypt.Key(password, u.Salt, 16384, 8, 1, 32)
+		// "hasheamos" la contraseña con scrypt
+		u.Hash, _ = scrypt.Key(password, u.Salt, 16384, 8, 1, 32)
 
-			//----------------------------------------------------
-			//		Código viejo
-			//
-			//code, _ := createUser(u.Username, u.Password, encode64(u.Hash), encode64(u.Salt), u.Name, u.Surname, u.Email)
-			//----------------------------------------------------
+		//----------------------------------------------------
+		//		Código viejo
+		//
+		//code, _ := createUser(u.Username, u.Password, encode64(u.Hash), encode64(u.Salt), u.Name, u.Surname, u.Email)
+		//----------------------------------------------------
 
-			//----------------------------------------------------
-			//		Código nuevo
-			code, _ := createUser(u.Username, u.Password, encode64(u.Hash), encode64(u.Salt), u.Data)
+		//----------------------------------------------------
+		//		Código nuevo
+		code, _ = createUser(u.Username, u.Password, encode64(u.Hash), encode64(u.Salt), u.Data)
 
-			if code == 1 {
-				response(w, true, "Usuario registrado")
+		if code == 1 {
+			response(w, true, "Usuario registrado")
 
-			} else {
-				response(w, true, "Usuario no se ha podido registrar")
-			}
 		} else {
-			response(w, false, "Usuario ya registrado")
+			response(w, true, "Usuario no se ha podido registrar")
 		}
+		//} else {
+		//response(w, false, "Usuario ya registrado")
+		//}
 	case "viewPassword": // ** View Password
 
 	case "addPassword": // ** Add Password
