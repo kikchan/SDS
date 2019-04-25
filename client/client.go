@@ -48,10 +48,15 @@ func chk(e error) {
 	}
 }
 
+type s struct {
+	Int    int
+	String string
+}
+
 type userData struct {
-	name    string // Nombre
-	surname string // Apelllidos
-	email   string // email (quitar)
+	Name    string
+	Surname string
+	Email   string
 }
 
 // ejemplo de tipo para un usuario
@@ -208,14 +213,19 @@ func main() {
 			keyLogin := keyClient[:32]  // una mitad para el login (256 bits)
 			keyData := keyClient[32:64] // la otra para los datos (256 bits)
 
-			//userData := userData{name: name, surname: surname, email: email}
+			a := &userData{name, surname, email}
+
+			out, err := json.Marshal(a)
+			if err != nil {
+				panic(err)
+			}
 
 			// ** ejemplo de registro
 			data := url.Values{}                 // estructura para contener los valores
 			data.Set("cmd", "register")          // comando (string)
 			data.Set("user", username)           // usuario (string)
 			data.Set("pass", encode64(keyLogin)) // "contraseña" a base64
-			//data.Set("userData", nil)
+			data.Set("userData", encode64(out))
 
 			// comprimimos y codificamos la clave pública
 			data.Set("pubkey", encode64(compress(pubJSON)))

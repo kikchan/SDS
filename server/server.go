@@ -120,9 +120,7 @@ func handler(w http.ResponseWriter, req *http.Request) {
 		//if code == -1 { // ARREGLAR EL FINDUSER -- KIRIL
 		u := user{}
 		u.Username = req.Form.Get("user") // username
-		u.Name = req.Form.Get("name")
-		u.Surname = req.Form.Get("surname")
-		u.Email = req.Form.Get("email")
+		u.Data = req.Form.Get("userData")
 		u.Password = req.Form.Get("pass")
 		u.Salt = make([]byte, 16) // sal (16 bytes == 128 bits)
 		rand.Read(u.Salt)         // la sal es aleatoria
