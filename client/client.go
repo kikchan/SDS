@@ -27,6 +27,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
@@ -48,9 +49,14 @@ func chk(e error) {
 	}
 }
 
-type s struct {
-	Int    int
-	String string
+type notesData struct {
+	date string
+	text string
+}
+
+type value struct {
+	Ok  bool
+	Msg string
 }
 
 type userData struct {
@@ -97,6 +103,13 @@ func compress(data []byte) []byte {
 // función para codificar de []bytes a string (Base64)
 func encode64(data []byte) string {
 	return base64.StdEncoding.EncodeToString(data) // sólo utiliza caracteres "imprimibles"
+}
+
+// función para decodificar de string a []bytes (Base64)
+func decode64(s string) []byte {
+	b, err := base64.StdEncoding.DecodeString(s) // recupera el formato original
+	chk(err)                                     // comprobamos el error
+	return b                                     // devolvemos los datos originales
 }
 
 func menu(eleccion *int) {
@@ -193,7 +206,7 @@ func main() {
 			data.Set("pass", encode64(keyLogin)) // contraseña (a base64 porque es []byte)
 			r, err := client.PostForm("https://localhost:8080", data)
 			chk(err)
-			//io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
+			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
 
 			if r.StatusCode == 200 {
 				logueado(client, username)
@@ -481,15 +494,50 @@ func menuGestionNotas(eleccion *int) {
 }
 
 func gestionNotas(client *http.Client, username string) {
+	data := url.Values{} // estructura para contener los valores
+
+	data.Set("cmd", "Notes") // comando (string)
+
+	r, err := client.PostForm("https://localhost:8080/notes", data) // enviamos por POST
+	chk(err)
+
+	body, err := ioutil.ReadAll(r.Body)
+	value := value{}
+	if err == nil && data != nil {
+		err = json.Unmarshal(body, value)
+	}
+
+	fmt.Println(string(body))
+
 	var eleccion int
 	menuGestionNotas(&eleccion)
 
 	for {
 		switch eleccion {
 		case 1: //add note
+			data := url.Values{} // estructura para contener los valores
+
+			data.Set("cmd", "modifyNotes") // comando (string)
+
+			fmt.Print("Inserte nota: ")
+			var note string
+			fmt.Scanf("%s", &note)
+
+			fmt.Print("Inserte fecha: ")
+			var date string
+			fmt.Scanf("%s", &date)
+
+			data.Set("username", username) // usuario (string)
+			data.Set("note", note)
+			data.Set("date", date)
+
+			r, err := client.PostForm("https://localhost:8080/notes", data) // enviamos por POST
+			chk(err)
+			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
+			fmt.Println()
 
 		case 2: //List notes
-
+			// sacar con id
 		case 3: //Modify note
 
 		case 4: //Delete note

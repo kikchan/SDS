@@ -42,6 +42,11 @@ type user struct {
 	DataOld map[string]string // datos adicionales del usuario
 }
 
+type notesData struct {
+	Date string
+	Text string
+}
+
 // función para codificar de []bytes a string (Base64)
 func encode64(data []byte) string {
 	return base64.StdEncoding.EncodeToString(data) // sólo utiliza caracteres "imprimibles"
@@ -71,7 +76,13 @@ func response(w http.ResponseWriter, ok bool, msg string) {
 	w.Write(rJSON)                 // escribimos el JSON resultante
 }
 
-var usersBD []user
+// función para escribir una respuesta del servidor
+func response2(w http.ResponseWriter, msg string) {
+	r := resp{Msg: msg}            // formateamos respuesta
+	rJSON, err := json.Marshal(&r) // codificamos en JSON
+	chk(err)                       // comprobamos error
+	w.Write(rJSON)                 // escribimos el JSON resultante
+}
 
 func main() {
 	/*
@@ -117,43 +128,35 @@ func handler(w http.ResponseWriter, req *http.Request) {
 
 	case "register": // ** registro
 		code, _, _ := findUser(req.Form.Get("user"))
-		//if code == -1 { // ARREGLAR EL FINDUSER -- KIRIL
-		u := user{}
-		u.Username = req.Form.Get("user") // username
-		u.Data = req.Form.Get("userData")
-		u.Password = req.Form.Get("pass")
-		u.Salt = make([]byte, 16) // sal (16 bytes == 128 bits)
-		rand.Read(u.Salt)         // la sal es aleatoria
+		if code == -3 {
+			u := user{}
+			u.Username = req.Form.Get("user") // username
+			u.Data = req.Form.Get("userData")
+			u.Password = req.Form.Get("pass")
+			u.Salt = make([]byte, 16) // sal (16 bytes == 128 bits)
+			rand.Read(u.Salt)         // la sal es aleatoria
 
-		//----------------------------------------------------
-		//		Aquí he cambiado u.Data por u.DataOld para que compile
-		u.DataOld = make(map[string]string)           // reservamos mapa de datos de usuario
-		u.DataOld["private"] = req.Form.Get("prikey") // clave privada
-		u.DataOld["public"] = req.Form.Get("pubkey")  // clave pública
-		password := decode64(req.Form.Get("pass"))    // contraseña (keyLogin)
+			//----------------------------------------------------
+			//		Aquí he cambiado u.Data por u.DataOld para que compile
+			u.DataOld = make(map[string]string)           // reservamos mapa de datos de usuario
+			u.DataOld["private"] = req.Form.Get("prikey") // clave privada
+			u.DataOld["public"] = req.Form.Get("pubkey")  // clave pública
+			password := decode64(req.Form.Get("pass"))    // contraseña (keyLogin)
 
-		// "hasheamos" la contraseña con scrypt
-		u.Hash, _ = scrypt.Key(password, u.Salt, 16384, 8, 1, 32)
+			// "hasheamos" la contraseña con scrypt
+			u.Hash, _ = scrypt.Key(password, u.Salt, 16384, 8, 1, 32)
 
-		//----------------------------------------------------
-		//		Código viejo
-		//
-		//code, _ := createUser(u.Username, u.Password, encode64(u.Hash), encode64(u.Salt), u.Name, u.Surname, u.Email)
-		//----------------------------------------------------
+			code, _ = createUser(u.Username, u.Password, encode64(u.Hash), encode64(u.Salt), u.Data)
 
-		//----------------------------------------------------
-		//		Código nuevo
-		code, _ = createUser(u.Username, u.Password, encode64(u.Hash), encode64(u.Salt), u.Data)
+			if code == 1 {
+				response(w, true, "Usuario registrado")
 
-		if code == 1 {
-			response(w, true, "Usuario registrado")
-
+			} else {
+				response(w, true, "Usuario no se ha podido registrar")
+			}
 		} else {
-			response(w, true, "Usuario no se ha podido registrar")
+			response(w, false, "Usuario ya registrado")
 		}
-		//} else {
-		//response(w, false, "Usuario ya registrado")
-		//}
 	case "viewPassword": // ** View Password
 
 	case "addPassword": // ** Add Password
@@ -215,6 +218,20 @@ func handler(w http.ResponseWriter, req *http.Request) {
 			fmt.Println("El usuario no se puede eliminar.")
 		}
 
+		return
+
+	case "Notes":
+
+		a := &notesData{"21-05-1994", "hola"}
+
+		out, err := json.Marshal(a)
+		if err != nil {
+			panic(err)
+		}
+
+		fmt.Println(a.Text)
+		fmt.Println(string(out))
+		response2(w, encode64(out))
 		return
 
 	default:
