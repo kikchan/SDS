@@ -85,22 +85,24 @@ func response2(w http.ResponseWriter, msg string) {
 }
 
 func main() {
-	/*
-		if true {
-			fmt.Println(createUser("kiril", "123456", "hash", "salt", "data"))
-			fmt.Println(findUser("kiril"))
-			fmt.Println(deleteUser("kiril"))
-			fmt.Println(deleteUser("jose"))
+	if true {
+		fmt.Println(createUser("kiril", "123456", "hash", "salt", "data"))
+		fmt.Println(findUser("kiril"))
 
-			fmt.Println(createUser("kiril", "123456", "hash", "salt", "data"))
+		fmt.Println(updatePassword("kiril", "password"))
+		fmt.Println(updateCard("kiril", "card"))
+		fmt.Println(updateNote("kiril", "note"))
 
-			fmt.Println(updatePassword("kiril", "contraseña"))
-			fmt.Println(updateCard("kiril", "tarjeta"))
-			fmt.Println(updateNote("kiril", "nota"))
-		}
-	*/
+		fmt.Println(getUserPasswords("kiril"))
+		fmt.Println(getUserCards("kiril"))
+		fmt.Println(getUserNotes("kiril"))
+
+		fmt.Println(deleteUser("kiril"))
+	}
 
 	http.HandleFunc("/", handler) // asignamos un handler global
+
+	fmt.Println("Awaiting connections...")
 
 	// escuchamos el puerto 8080 con https y comprobamos el error
 	// Para generar certificados autofirmados con openssl usar:

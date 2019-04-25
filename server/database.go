@@ -131,7 +131,6 @@ func deleteUser(username string) (int, string) {
 			code = -2
 			msg = err.Error()
 		} else {
-			code = 1
 			msg = "User deleted: " + username
 
 			defer delete.Close()
@@ -148,6 +147,7 @@ func deleteUser(username string) (int, string) {
 		1: OK
 	   -1: Error connecting to database
 	   -2: Error executing query
+	   -3: The user doesn't exist
 */
 func updatePassword(user string, data string) (int, string) {
 	var msg string
@@ -161,17 +161,73 @@ func updatePassword(user string, data string) (int, string) {
 
 	defer db.Close()
 
-	var query = "UPDATE passwords SET data='" + data + "' WHERE user='" + user + "';"
+	code, msg, _ = findUser(user)
 
-	update, err := db.Query(query)
+	if code == 1 {
+		var query = "UPDATE passwords SET data='" + data + "' WHERE user='" + user + "';"
+
+		update, err := db.Query(query)
+		if err != nil {
+			code = -2
+			msg = err.Error()
+		} else {
+			msg = "Passwords modified for user: " + user
+
+			defer update.Close()
+		}
+	}
+
+	return code, msg
+}
+
+/*
+	GET PASSWORDS FOR A GIVEN USER
+
+	Returns:
+		1: OK
+	   -1: Error connecting to database
+	   -2: Error executing query
+	   -3: The user doesn't exist
+	   -4: No passwords were found
+*/
+func getUserPasswords(user string) (int, string) {
+	var msg string
+	var code int
+
+	db, err := sql.Open("mysql", DB_Username+":"+DB_Password+"@"+DB_Protocol+"("+DB_IP+":"+DB_Port+")/"+DB_Name)
 	if err != nil {
-		code = -2
+		code = -1
 		msg = err.Error()
-	} else {
-		code = 1
-		msg = "Passwords modified for user: " + user
+	}
 
-		defer update.Close()
+	defer db.Close()
+
+	code, msg, _ = findUser(user)
+
+	if code == 1 {
+		var query = "SELECT * FROM passwords WHERE user='" + user + "';"
+
+		read, err := db.Query(query)
+		if err != nil {
+			code = -2
+			msg = err.Error()
+		} else {
+			defer read.Close()
+
+			code = -4
+			msg = "No passwords were found"
+
+			if read.Next() {
+				var a, b, c string
+
+				err = read.Scan(&a, &b, &c)
+
+				if c != "" {
+					code = 1
+					msg = "[" + a + " " + b + " " + c + "]"
+				}
+			}
+		}
 	}
 
 	return code, msg
@@ -184,6 +240,7 @@ func updatePassword(user string, data string) (int, string) {
 		1: OK
 	   -1: Error connecting to database
 	   -2: Error executing query
+	   -3: The user doesn't exist
 */
 func updateCard(user string, data string) (int, string) {
 	var msg string
@@ -197,17 +254,73 @@ func updateCard(user string, data string) (int, string) {
 
 	defer db.Close()
 
-	var query = "UPDATE cards SET data='" + data + "' WHERE user='" + user + "';"
+	code, msg, _ = findUser(user)
 
-	update, err := db.Query(query)
+	if code == 1 {
+		var query = "UPDATE cards SET data='" + data + "' WHERE user='" + user + "';"
+
+		update, err := db.Query(query)
+		if err != nil {
+			code = -2
+			msg = err.Error()
+		} else {
+			msg = "Cards modified for user: " + user
+
+			defer update.Close()
+		}
+	}
+
+	return code, msg
+}
+
+/*
+	GET CARDS FOR A GIVEN USER
+
+	Returns:
+		1: OK
+	   -1: Error connecting to database
+	   -2: Error executing query
+	   -3: The user doesn't exist
+	   -5: No cards were found
+*/
+func getUserCards(user string) (int, string) {
+	var msg string
+	var code int
+
+	db, err := sql.Open("mysql", DB_Username+":"+DB_Password+"@"+DB_Protocol+"("+DB_IP+":"+DB_Port+")/"+DB_Name)
 	if err != nil {
-		code = -2
+		code = -1
 		msg = err.Error()
-	} else {
-		code = 1
-		msg = "Cards modified for user: " + user
+	}
 
-		defer update.Close()
+	defer db.Close()
+
+	code, msg, _ = findUser(user)
+
+	if code == 1 {
+		var query = "SELECT * FROM cards WHERE user='" + user + "';"
+
+		read, err := db.Query(query)
+		if err != nil {
+			code = -2
+			msg = err.Error()
+		} else {
+			defer read.Close()
+
+			code = -4
+			msg = "No cards were found"
+
+			if read.Next() {
+				var a, b, c string
+
+				err = read.Scan(&a, &b, &c)
+
+				if c != "" {
+					code = 1
+					msg = "[" + a + " " + b + " " + c + "]"
+				}
+			}
+		}
 	}
 
 	return code, msg
@@ -233,17 +346,73 @@ func updateNote(user string, data string) (int, string) {
 
 	defer db.Close()
 
-	var query = "UPDATE notes SET data='" + data + "' WHERE user='" + user + "';"
+	code, msg, _ = findUser(user)
 
-	update, err := db.Query(query)
+	if code == 1 {
+		var query = "UPDATE notes SET data='" + data + "' WHERE user='" + user + "';"
+
+		update, err := db.Query(query)
+		if err != nil {
+			code = -2
+			msg = err.Error()
+		} else {
+			msg = "Notes modified for user: " + user
+
+			defer update.Close()
+		}
+	}
+
+	return code, msg
+}
+
+/*
+	GET NOTES FOR A GIVEN USER
+
+	Returns:
+		1: OK
+	   -1: Error connecting to database
+	   -2: Error executing query
+	   -3: The user doesn't exist
+	   -6: No notes were found
+*/
+func getUserNotes(user string) (int, string) {
+	var msg string
+	var code int
+
+	db, err := sql.Open("mysql", DB_Username+":"+DB_Password+"@"+DB_Protocol+"("+DB_IP+":"+DB_Port+")/"+DB_Name)
 	if err != nil {
-		code = -2
+		code = -1
 		msg = err.Error()
-	} else {
-		code = 1
-		msg = "Notes modified for user: " + user
+	}
 
-		defer update.Close()
+	defer db.Close()
+
+	code, msg, _ = findUser(user)
+
+	if code == 1 {
+		var query = "SELECT * FROM notes WHERE user='" + user + "';"
+
+		read, err := db.Query(query)
+		if err != nil {
+			code = -2
+			msg = err.Error()
+		} else {
+			defer read.Close()
+
+			code = -4
+			msg = "No notes were found"
+
+			if read.Next() {
+				var a, b, c string
+
+				err = read.Scan(&a, &b, &c)
+
+				if c != "" {
+					code = 1
+					msg = "[" + a + " " + b + " " + c + "]"
+				}
+			}
+		}
 	}
 
 	return code, msg

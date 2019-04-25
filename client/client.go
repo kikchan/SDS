@@ -494,7 +494,7 @@ func menuGestionNotas(eleccion *int) {
 }
 
 func gestionNotas(client *http.Client, username string) {
-	notas := make(map[int]notesData)
+	//notas := make(map[int]notesData)
 
 	data := url.Values{} // estructura para contener los valores
 
