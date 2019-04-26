@@ -159,55 +159,6 @@ func handler(w http.ResponseWriter, req *http.Request) {
 		} else {
 			response(w, false, "Usuario ya registrado")
 		}
-	case "viewPassword": // ** View Password
-
-	case "addPassword": // ** Add Password
-		/*
-			_, _, username := findUser(req.Form.Get("username"))
-
-			user := req.Form.Get("user")
-			site := req.Form.Get("site")
-			contraseña := req.Form.Get("contraseña")
-		*/
-
-		//----------------------------------------------------
-		//		Código viejo
-		//
-		//code, _ := createPassword(user, contraseña, username.Username, site)
-		//
-		//		Hay que meter los datos de la estructura en el campo data
-		//----------------------------------------------------
-
-		//if code == 1 {
-		//	fmt.Println("Contraseña guardada con éxito.")
-		//}
-
-	case "addCreditCard": // ** Add credit card
-		/*
-			_, _, username := findUser(req.Form.Get("username"))
-
-			pan := req.Form.Get("pan")
-			ccv := req.Form.Get("ccv")
-			monthString := req.Form.Get("month")
-			yearString := req.Form.Get("year")
-
-			month, _ := strconv.Atoi(monthString)
-			year, _ := strconv.Atoi(yearString)
-		*/
-
-		//----------------------------------------------------
-		//		Código viejo
-		//
-		//code, _ := createCard(pan, ccv, month, year, username.Username)
-		//
-		//		Hay que meter los datos de la estructura en el campo data
-		//----------------------------------------------------
-
-		//if code == 1 {
-		//	fmt.Println("Tarjeta de crédito guardada con éxito.")
-		//}
-
-		return
 
 	case "deleteUser":
 		_, _, username := findUser(req.Form.Get("username"))

@@ -33,6 +33,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	//"net/http"
 	//"crypto/tls"
@@ -334,15 +335,44 @@ func menuGestionContraseña(eleccion *int) {
 }
 
 func gestionContraseñas(client *http.Client, username string) {
+	contraseñas := make(map[int]passwordsData)
+
+	data := url.Values{} // estructura para contener los valores
+
+	data.Set("cmd", "Passwords") // comando (string)
+	data.Set("username", username)
+
+	r, err := client.PostForm("https://localhost:8080/cards", data) // enviamos por POST
+	chk(err)
+
+	//--------- Con esto recojo del servidor las tarjetas y las convierto al struct
+	body, err := ioutil.ReadAll(r.Body)
+
+	dec := json.NewDecoder(strings.NewReader(string(body)))
+
+	for {
+		var m resp
+		if err := dec.Decode(&m); err == io.EOF {
+			break
+		} else if err != nil {
+			log.Fatal(err)
+		}
+
+		json.Unmarshal(decode64(m.Msg), &contraseñas) // Con esto paso al map notas lo que recojo en el servidor
+	}
+	//------------------------------------------------------------------------
+
 	var eleccion int
 	menuGestionContraseña(&eleccion)
 
 	for {
 		switch eleccion {
 		case 1: //addPassword
+			newPassword := passwordsData{}
+
 			data := url.Values{} // estructura para contener los valores
 
-			data.Set("cmd", "addPassword") // comando (string)
+			data.Set("cmd", "modifyPasswords") // comando (string)
 
 			fmt.Print("Inserte URL: ")
 			var url string
@@ -393,25 +423,153 @@ func gestionContraseñas(client *http.Client, username string) {
 			fmt.Printf("La contraseña generada es: ")
 			fmt.Println(contraseña)
 
-			data.Set("username", username) // usuario (string)
-			data.Set("user", user)
-			data.Set("site", url)
-			data.Set("contraseña", contraseña)
+			newPassword.Username = user
+			newPassword.Password = contraseña
+			newPassword.Site = url
+			newPassword.Modified = time.Now().String()
 
-			r, err := client.PostForm("https://localhost:8080", data) // enviamos por POST
+			contraseñas[len(contraseñas)+1] = newPassword
+
+			out, err := json.Marshal(contraseñas)
+			if err != nil {
+				panic(err)
+			}
+
+			data.Set("username", username)
+			data.Set("passwords", encode64(out))
+
+			r, err := client.PostForm("https://localhost:8080/passwords", data) // enviamos por POST
 			chk(err)
 			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
 			fmt.Println()
 
 			return
+
 		case 2: //List password
+			for k, v := range contraseñas {
+				fmt.Println(k, "-. URL: ", v.Site, ", de: ", v.Username)
+			}
+
+			return
 
 		case 3: //Modify password
+			modifyPasswords := passwordsData{}
+			data := url.Values{} // estructura para contener los valores
+
+			for k, v := range contraseñas {
+				fmt.Println(k, "-. URL: ", v.Site, ", de: ", v.Username)
+			}
+
+			data.Set("cmd", "modifyPasswords") // comando (string)
+
+			fmt.Print("¿Que contraseña quieres editar?(num) ")
+			var index int
+			fmt.Scanf("%d", &index)
+
+			fmt.Print("Inserte URL: ")
+			var url string
+			fmt.Scanf("%s", &url)
+
+			fmt.Print("Inserte usuario: ")
+			var user string
+			fmt.Scanf("%s", &user)
+
+			fmt.Print("¿Quieres generar una contraseña aleatoria?(s/n) ")
+			var opcion string
+			fmt.Scanf("%s", &opcion)
+
+			var contraseña string
+			if opcion == "s" {
+				fmt.Print("Inserte longitud de la contraseña: ")
+				var long int
+				fmt.Scanf("%d", &long)
+
+				fmt.Print("Inserte número de digitos de la contraseña: ")
+				var numDigitos int
+				fmt.Scanf("%d", &numDigitos)
+
+				fmt.Print("Inserte número de simbolos de la contraseña: ")
+				var numSimbolos int
+				fmt.Scanf("%d", &numSimbolos)
+
+				fmt.Print("¿Permitir mayúsculas y minusculas?(t/f): ")
+				var upperLower bool
+				fmt.Scanf("%t", &upperLower)
+
+				fmt.Print("¿Repetir carácteres?(t/f): ")
+				var repeatCharacers bool
+				fmt.Scanf("%t", &repeatCharacers)
+				// Generate a password that is 64 characters long with 10 digits, 10 symbols,
+				// allowing upper and lower case letters, disallowing repeat characters.
+				// upperLower = false es que permite
+				contrasenyaa, err := password.Generate(long, numDigitos, numSimbolos, !upperLower, repeatCharacers)
+				if err != nil {
+					log.Fatal(err)
+				}
+				contraseña = contrasenyaa
+			} else {
+				fmt.Print("Introduce contraseña: ")
+				fmt.Scanf("%s", &contraseña)
+			}
+
+			fmt.Printf("La contraseña generada es: ")
+			fmt.Println(contraseña)
+
+			modifyPasswords.Username = user
+			modifyPasswords.Password = contraseña
+			modifyPasswords.Site = url
+			modifyPasswords.Modified = time.Now().String()
+
+			contraseñas[index] = modifyPasswords
+			out, err := json.Marshal(contraseñas)
+			if err != nil {
+				panic(err)
+			}
+
+			data.Set("username", username)
+			data.Set("passwords", encode64(out))
+
+			r, err := client.PostForm("https://localhost:8080/passwords", data) // enviamos por POST
+			chk(err)
+			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
+			fmt.Println()
+			return
 
 		case 4: //Delete password
+			data := url.Values{} // estructura para contener los valores
+
+			for k, v := range contraseñas {
+				fmt.Println(k, "-. URL: ", v.Site, ", de: ", v.Username)
+			}
+
+			data.Set("cmd", "modifyPasswords") // comando (string)
+
+			fmt.Print("¿Que contraseña quieres borrar?(num) ")
+			var index int
+			fmt.Scanf("%d", &index)
+
+			delete(contraseñas, index)
+
+			// KIRIL, AQUI HABRIA QUE HACER ALGO PARA QUE SE VUELVAN A COLOCAR LOS INDEX DEL MAP (YA QUE AL BORRAR SE QUEDA UNO SUELTO)
+
+			out, err := json.Marshal(contraseñas)
+			if err != nil {
+				panic(err)
+			}
+
+			data.Set("username", username)
+			data.Set("passwords", encode64(out))
+
+			r, err := client.PostForm("https://localhost:8080/passwords", data) // enviamos por POST
+			chk(err)
+			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
+			fmt.Println()
+
+			return
 
 		case 5:
 			return
+
 		default:
 			fmt.Println("No has seleccionado una opcion correcta.")
 
