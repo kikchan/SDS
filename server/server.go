@@ -222,6 +222,62 @@ func handler(w http.ResponseWriter, req *http.Request) {
 
 		return
 
+	case "Passwords":
+
+		code, jsonPasswords := getUserPasswords(req.Form.Get("username"))
+
+		if code == 1 {
+			response2(w, jsonPasswords)
+		} else {
+			fmt.Println("Error al coger las contraseñas")
+			response2(w, "Error")
+		}
+
+		return
+
+	case "modifyPasswords":
+
+		username := req.Form.Get("username")
+		passwords := req.Form.Get("passwords")
+
+		code, _ := updatePassword(username, passwords)
+
+		if code == 1 {
+			fmt.Println("Se han modificado contraseñas correctamente.")
+		} else {
+			fmt.Println("Error modificando contraseñas.")
+		}
+
+		return
+
+	case "Cards":
+
+		code, jsonCards := getUserCards(req.Form.Get("username"))
+
+		if code == 1 {
+			response2(w, jsonCards)
+		} else {
+			fmt.Println("Error al coger las tarjetas")
+			response2(w, "Error")
+		}
+
+		return
+
+	case "modifyCards":
+
+		username := req.Form.Get("username")
+		cards := req.Form.Get("cards")
+
+		code, _ := updateCard(username, cards)
+
+		if code == 1 {
+			fmt.Println("Se han modificado tarjetas correctamente.")
+		} else {
+			fmt.Println("Error modificando tarjetas.")
+		}
+
+		return
+
 	case "Notes":
 
 		code, jsonNotas := getUserNotes(req.Form.Get("username"))
@@ -243,7 +299,7 @@ func handler(w http.ResponseWriter, req *http.Request) {
 		code, _ := updateNote(username, notas)
 
 		if code == 1 {
-			fmt.Println("Se ha modificado notas correctamente.")
+			fmt.Println("Se han modificado notas correctamente.")
 		} else {
 			fmt.Println("Error modificando notas.")
 		}

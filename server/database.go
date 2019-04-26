@@ -205,7 +205,7 @@ func getUserPasswords(user string) (int, string) {
 	code, msg, _ = findUser(user)
 
 	if code == 1 {
-		var query = "SELECT * FROM passwords WHERE user='" + user + "';"
+		var query = "SELECT data FROM passwords WHERE user='" + user + "';"
 
 		read, err := db.Query(query)
 		if err != nil {
@@ -218,14 +218,12 @@ func getUserPasswords(user string) (int, string) {
 			msg = "No passwords were found"
 
 			if read.Next() {
-				var a, b, c string
+				var a string
 
-				err = read.Scan(&a, &b, &c)
+				err = read.Scan(&a)
 
-				if c != "" {
-					code = 1
-					msg = "[" + a + " " + b + " " + c + "]"
-				}
+				code = 1
+				msg = a
 			}
 		}
 	}
@@ -298,7 +296,7 @@ func getUserCards(user string) (int, string) {
 	code, msg, _ = findUser(user)
 
 	if code == 1 {
-		var query = "SELECT * FROM cards WHERE user='" + user + "';"
+		var query = "SELECT data FROM cards WHERE user='" + user + "';"
 
 		read, err := db.Query(query)
 		if err != nil {
@@ -311,14 +309,12 @@ func getUserCards(user string) (int, string) {
 			msg = "No cards were found"
 
 			if read.Next() {
-				var a, b, c string
+				var a string
 
-				err = read.Scan(&a, &b, &c)
+				err = read.Scan(&a)
 
-				if c != "" {
-					code = 1
-					msg = "[" + a + " " + b + " " + c + "]"
-				}
+				code = 1
+				msg = a
 			}
 		}
 	}
