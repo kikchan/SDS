@@ -595,8 +595,6 @@ func gestionNotas(client *http.Client, username string) {
 				panic(err)
 			}
 
-			fmt.Println(string(out))
-
 			data.Set("username", username)
 			data.Set("notas", encode64(out))
 
@@ -618,14 +616,15 @@ func gestionNotas(client *http.Client, username string) {
 			fmt.Print("¿Que nota quieres borrar?(num) ")
 			var index int
 			fmt.Scanf("%d", &index)
+
 			delete(notas, index)
+
+			// KIRIL, AQUI HABRIA QUE HACER ALGO PARA QUE SE VUELVAN A COLOCAR LOS INDEX DEL MAP (YA QUE AL BORRAR SE QUEDA UNO SUELTO)
 
 			out, err := json.Marshal(notas)
 			if err != nil {
 				panic(err)
 			}
-
-			fmt.Println(string(out))
 
 			data.Set("username", username)
 			data.Set("notas", encode64(out))

@@ -223,34 +223,16 @@ func handler(w http.ResponseWriter, req *http.Request) {
 		return
 
 	case "Notes":
-		/* KIRIL CUANDO CAMBIES EL getUserNotes para que solo te llegue el data, deja solo lo comentado,
-			me daba error -4
 
 		code, jsonNotas := getUserNotes(req.Form.Get("username"))
-
-		fmt.Println(code)
-		fmt.Println(jsonNotas)
 
 		if code == 1 {
 			response2(w, jsonNotas)
 		} else {
+			fmt.Println("Error al coger las notas")
 			response2(w, "Error")
 		}
-		*/
-		notas := make(map[int]notesData)
 
-		a := notesData{"21-05-1994", "hola"}
-		b := notesData{"1-4-5454", "puta"}
-
-		notas[1] = a
-		notas[2] = b
-
-		out, err := json.Marshal(notas)
-		if err != nil {
-			panic(err)
-		}
-
-		response2(w, encode64(out))
 		return
 
 	case "modifyNotes":
