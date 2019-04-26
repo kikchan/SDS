@@ -50,6 +50,20 @@ func chk(e error) {
 	}
 }
 
+type passwordsData struct {
+	Username string
+	Password string
+	Modified string
+	Site     string
+}
+
+type cardsData struct {
+	Pan    string
+	Ccv    string
+	Expiry string
+	Owner  string
+}
+
 type notesData struct {
 	Date string
 	Text string
@@ -420,15 +434,48 @@ func menuGestionTarjetas(eleccion *int) {
 }
 
 func gestionTarjetas(client *http.Client, username string) {
+	tarjetas := make(map[int]cardsData)
+
+	data := url.Values{} // estructura para contener los valores
+
+	data.Set("cmd", "Cards") // comando (string)
+	data.Set("username", username)
+
+	r, err := client.PostForm("https://localhost:8080/cards", data) // enviamos por POST
+	chk(err)
+
+	//--------- Con esto recojo del servidor las tarjetas y las convierto al struct
+	body, err := ioutil.ReadAll(r.Body)
+
+	dec := json.NewDecoder(strings.NewReader(string(body)))
+
+	for {
+		var m resp
+		if err := dec.Decode(&m); err == io.EOF {
+			break
+		} else if err != nil {
+			log.Fatal(err)
+		}
+
+		json.Unmarshal(decode64(m.Msg), &tarjetas) // Con esto paso al map notas lo que recojo en el servidor
+	}
+	//------------------------------------------------------------------------
+
 	var eleccion int
 	menuGestionTarjetas(&eleccion)
 
 	for {
 		switch eleccion {
 		case 1: //addCard
+			newCard := cardsData{}
+
 			data := url.Values{} // estructura para contener los valores
 
-			data.Set("cmd", "addCreditCard") // comando (string)
+			data.Set("cmd", "modifyCards") // comando (string)
+
+			fmt.Print("Inserte propietario de la tarjeta: ")
+			var owner string
+			fmt.Scanf("%s", &owner)
 
 			fmt.Print("Inserte número de la tarjeta: ")
 			var pan string
@@ -446,13 +493,22 @@ func gestionTarjetas(client *http.Client, username string) {
 			var year string
 			fmt.Scanf("%s", &year)
 
-			data.Set("username", username) // usuario (string)
-			data.Set("pan", pan)
-			data.Set("ccv", ccv)
-			data.Set("month", month)
-			data.Set("year", year)
+			newCard.Pan = pan
+			newCard.Owner = owner
+			newCard.Ccv = ccv
+			newCard.Expiry = month + "-" + year
 
-			r, err := client.PostForm("https://localhost:8080", data) // enviamos por POST
+			tarjetas[len(tarjetas)+1] = newCard
+
+			out, err := json.Marshal(tarjetas)
+			if err != nil {
+				panic(err)
+			}
+
+			data.Set("username", username)
+			data.Set("cards", encode64(out))
+
+			r, err := client.PostForm("https://localhost:8080/cards", data) // enviamos por POST
 			chk(err)
 			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
 			fmt.Println()
@@ -460,10 +516,97 @@ func gestionTarjetas(client *http.Client, username string) {
 			return
 
 		case 2: //List cards
+			for k, v := range tarjetas {
+				fmt.Println(k, "-. Número: ", v.Pan, ", de: ", v.Owner)
+			}
+
+			return
 
 		case 3: //Modify card
+			modifyCard := cardsData{}
+			data := url.Values{} // estructura para contener los valores
+
+			for k, v := range tarjetas {
+				fmt.Println(k, "-. Número: ", v.Pan, ", de: ", v.Owner)
+			}
+
+			data.Set("cmd", "modifyCards") // comando (string)
+
+			fmt.Print("¿Que tarjeta quieres editar?(num) ")
+			var index int
+			fmt.Scanf("%d", &index)
+
+			fmt.Print("Inserte propietario de la tarjeta: ")
+			var owner string
+			fmt.Scanf("%s", &owner)
+
+			fmt.Print("Inserte número de la tarjeta: ")
+			var pan string
+			fmt.Scanf("%s", &pan)
+
+			fmt.Print("Inserte CCV: ")
+			var ccv string
+			fmt.Scanf("%s", &ccv)
+
+			fmt.Print("Inserte mes de caducidad: ")
+			var month string
+			fmt.Scanf("%s", &month)
+
+			fmt.Print("Inserte año de caducidad: ")
+			var year string
+			fmt.Scanf("%s", &year)
+
+			modifyCard.Pan = pan
+			modifyCard.Owner = owner
+			modifyCard.Ccv = ccv
+			modifyCard.Expiry = month + "-" + year
+
+			tarjetas[index] = modifyCard
+			out, err := json.Marshal(tarjetas)
+			if err != nil {
+				panic(err)
+			}
+
+			data.Set("username", username)
+			data.Set("cards", encode64(out))
+
+			r, err := client.PostForm("https://localhost:8080/cards", data) // enviamos por POST
+			chk(err)
+			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
+			fmt.Println()
+			return
 
 		case 4: //Delete card
+			data := url.Values{} // estructura para contener los valores
+
+			for k, v := range tarjetas {
+				fmt.Println(k, "-. Número: ", v.Pan, ", de: ", v.Owner)
+			}
+
+			data.Set("cmd", "modifyCards") // comando (string)
+
+			fmt.Print("¿Que tarjeta quieres borrar?(num) ")
+			var index int
+			fmt.Scanf("%d", &index)
+
+			delete(tarjetas, index)
+
+			// KIRIL, AQUI HABRIA QUE HACER ALGO PARA QUE SE VUELVAN A COLOCAR LOS INDEX DEL MAP (YA QUE AL BORRAR SE QUEDA UNO SUELTO)
+
+			out, err := json.Marshal(tarjetas)
+			if err != nil {
+				panic(err)
+			}
+
+			data.Set("username", username)
+			data.Set("cards", encode64(out))
+
+			r, err := client.PostForm("https://localhost:8080/cards", data) // enviamos por POST
+			chk(err)
+			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
+			fmt.Println()
+
+			return
 
 		case 5:
 			return
@@ -576,7 +719,6 @@ func gestionNotas(client *http.Client, username string) {
 			fmt.Print("¿Que nota quieres editar?(num) ")
 			var index int
 			fmt.Scanf("%d", &index)
-			delete(notas, index)
 
 			fmt.Print("Inserte nueva nota: ")
 			var text string
