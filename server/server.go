@@ -223,17 +223,49 @@ func handler(w http.ResponseWriter, req *http.Request) {
 		return
 
 	case "Notes":
+		/* KIRIL CUANDO CAMBIES EL getUserNotes para que solo te llegue el data, deja solo lo comentado,
+			me daba error -4
 
-		a := &notesData{"21-05-1994", "hola"}
+		code, jsonNotas := getUserNotes(req.Form.Get("username"))
 
-		out, err := json.Marshal(a)
+		fmt.Println(code)
+		fmt.Println(jsonNotas)
+
+		if code == 1 {
+			response2(w, jsonNotas)
+		} else {
+			response2(w, "Error")
+		}
+		*/
+		notas := make(map[int]notesData)
+
+		a := notesData{"21-05-1994", "hola"}
+		b := notesData{"1-4-5454", "puta"}
+
+		notas[1] = a
+		notas[2] = b
+
+		out, err := json.Marshal(notas)
 		if err != nil {
 			panic(err)
 		}
 
-		fmt.Println(a.Text)
-		fmt.Println(string(out))
 		response2(w, encode64(out))
+		return
+
+	case "modifyNotes":
+
+		username := req.Form.Get("username")
+		notas := req.Form.Get("notas")
+
+		code, _ := updateNote(username, notas)
+
+		if code == 1 {
+			fmt.Println("Se ha modificado notas correctamente.")
+		} else {
+			fmt.Println("Error modificando notas.")
+		}
+
 		return
 
 	default:

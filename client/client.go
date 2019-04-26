@@ -32,6 +32,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 
 	//"net/http"
 	//"crypto/tls"
@@ -50,13 +51,8 @@ func chk(e error) {
 }
 
 type notesData struct {
-	date string
-	text string
-}
-
-type value struct {
-	Ok  bool
-	Msg string
+	Date string
+	Text string
 }
 
 type userData struct {
@@ -494,22 +490,32 @@ func menuGestionNotas(eleccion *int) {
 }
 
 func gestionNotas(client *http.Client, username string) {
-	//notas := make(map[int]notesData)
+	notas := make(map[int]notesData)
 
 	data := url.Values{} // estructura para contener los valores
 
 	data.Set("cmd", "Notes") // comando (string)
+	data.Set("username", username)
 
 	r, err := client.PostForm("https://localhost:8080/notes", data) // enviamos por POST
 	chk(err)
 
 	body, err := ioutil.ReadAll(r.Body)
-	value := value{}
-	if err == nil && data != nil {
-		err = json.Unmarshal(body, value)
+
+	dec := json.NewDecoder(strings.NewReader(string(body)))
+
+	for {
+		var m resp
+		if err := dec.Decode(&m); err == io.EOF {
+			break
+		} else if err != nil {
+			log.Fatal(err)
+		}
+
+		json.Unmarshal(decode64(m.Msg), &notas) // Con esto paso al map notas lo que recojo en el servidor
 	}
 
-	fmt.Println(string(body))
+	// AQUI IGUALAR LO QUE ME DEVUELVEN A LA VARIABLE notas
 
 	var eleccion int
 	menuGestionNotas(&eleccion)
@@ -517,32 +523,80 @@ func gestionNotas(client *http.Client, username string) {
 	for {
 		switch eleccion {
 		case 1: //add note
+			newNota := notesData{}
+
 			data := url.Values{} // estructura para contener los valores
 
 			data.Set("cmd", "modifyNotes") // comando (string)
 
 			fmt.Print("Inserte nota: ")
-			var note string
-			fmt.Scanf("%s", &note)
+			var text string
+			fmt.Scanf("%s", &text)
 
 			fmt.Print("Inserte fecha: ")
 			var date string
 			fmt.Scanf("%s", &date)
 
-			data.Set("username", username) // usuario (string)
-			data.Set("note", note)
-			data.Set("date", date)
+			newNota.Text = text
+			newNota.Date = date
+
+			notas[len(notas)+1] = newNota
+			out, err := json.Marshal(notas)
+			if err != nil {
+				panic(err)
+			}
+
+			data.Set("username", username)
+			data.Set("notas", encode64(out))
 
 			r, err := client.PostForm("https://localhost:8080/notes", data) // enviamos por POST
 			chk(err)
 			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
 			fmt.Println()
 
+			return
+
 		case 2: //List notes
-			// sacar con id
+			for k, v := range notas {
+				fmt.Println(k, "-. Texto: ", v.Text, ", fecha: ", v.Date)
+			}
+
+			return
+
 		case 3: //Modify note
 
+			return
+
 		case 4: //Delete note
+			data := url.Values{} // estructura para contener los valores
+
+			for k, v := range notas {
+				fmt.Println(k, "-. Texto: ", v.Text, ", fecha: ", v.Date)
+			}
+
+			data.Set("cmd", "modifyNotes") // comando (string)
+
+			fmt.Print("¿Que nota quieres borrar?(num) ")
+			var index int
+			fmt.Scanf("%d", &index)
+			delete(notas, index)
+
+			out, err := json.Marshal(notas)
+			if err != nil {
+				panic(err)
+			}
+
+			fmt.Println(string(out))
+
+			data.Set("username", username)
+			data.Set("notas", encode64(out))
+
+			r, err := client.PostForm("https://localhost:8080/notes", data) // enviamos por POST
+			chk(err)
+			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
+			fmt.Println()
+
+			return
 
 		case 5:
 			return
