@@ -7,6 +7,9 @@
 - Instalar [golang/mysql](https://github.com/go-sql-driver/mysql):
 > go get -u github.com/go-sql-driver/mysql
 
+- Instalar [go-password](https://github.com/sethvargo/go-password/password):
+> go get -u github.com/sethvargo/go-password/password
+
 #### Para arrancar el servidor, situarse en la carpeta de este y ejecutar:
 > go run *.
 
