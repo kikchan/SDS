@@ -35,12 +35,6 @@ type user struct {
 	Hash     []byte // hash de la contraseña
 	Salt     []byte // sal para la contraseña
 	Data     string
-
-	//Cambios a partir de aquí. Yo quitaría estos campos.
-	Name    string
-	Surname string
-	Email   string
-	DataOld map[string]string // datos adicionales del usuario
 }
 
 type notesData struct {
@@ -62,19 +56,19 @@ func decode64(s string) []byte {
 
 // respuesta del servidor
 type resp struct {
-	Ok  bool   // true -> correcto, false -> error
-	Msg string // mensaje adicional
+	Code int    // true -> correcto, false -> error
+	Msg  string // mensaje adicional
 }
 
 // función para escribir una respuesta del servidor
-func response(w http.ResponseWriter, ok bool, msg string) {
-	if ok == false {
-		w.WriteHeader(404)
+func response(w http.ResponseWriter, code int, msg string) {
+	if code != 1 {
+		w.WriteHeader(400)
 	}
-	r := resp{Ok: ok, Msg: msg}    // formateamos respuesta
-	rJSON, err := json.Marshal(&r) // codificamos en JSON
-	chk(err)                       // comprobamos error
-	w.Write(rJSON)                 // escribimos el JSON resultante
+	r := resp{Code: code, Msg: msg} // formateamos respuesta
+	rJSON, err := json.Marshal(&r)  // codificamos en JSON
+	chk(err)                        // comprobamos error
+	w.Write(rJSON)                  // escribimos el JSON resultante
 }
 
 // función para escribir una respuesta del servidor
@@ -110,12 +104,12 @@ func handler(w http.ResponseWriter, req *http.Request) {
 			hash, _ := scrypt.Key(password, user.Salt, 16384, 8, 1, 32) // scrypt(contraseña)
 
 			if bytes.Compare(user.Hash, hash) == 0 { // comparamos
-				response(w, true, "Logged in")
+				response(w, 1, "Logged in")
 			} else {
-				response(w, false, "Wrong credentials")
+				response(w, 0, "Wrong credentials")
 			}
 		} else {
-			response(w, false, msg)
+			response(w, code, msg)
 		}
 
 		return
@@ -128,14 +122,8 @@ func handler(w http.ResponseWriter, req *http.Request) {
 			u.Data = req.Form.Get("userData")
 			u.Password = req.Form.Get("pass")
 			u.PubKey = req.Form.Get("pubkey")
-			u.Salt = make([]byte, 16) // sal (16 bytes == 128 bits)
-			rand.Read(u.Salt)         // la sal es aleatoria
-
-			//----------------------------------------------------
-			//		Aquí he cambiado u.Data por u.DataOld para que compile
-			//u.DataOld = make(map[string]string)           // reservamos mapa de datos de usuario
-			//u.DataOld["private"] = req.Form.Get("prikey") // clave privada
-			//u.DataOld["public"] = req.Form.Get("pubkey")  // clave pública
+			u.Salt = make([]byte, 16)                  // sal (16 bytes == 128 bits)
+			rand.Read(u.Salt)                          // la sal es aleatoria
 			password := decode64(req.Form.Get("pass")) // contraseña (keyLogin)
 
 			// "hasheamos" la contraseña con scrypt
@@ -143,16 +131,9 @@ func handler(w http.ResponseWriter, req *http.Request) {
 
 			code, msg = createUser(u.Username, u.Password, u.PubKey, encode64(u.Hash), encode64(u.Salt), u.Data)
 
-			response(w, true, msg)
-
-			if code == 1 {
-				response(w, true, msg)
-
-			} else {
-				response(w, false, msg)
-			}
+			response(w, code, msg)
 		} else {
-			response(w, false, "The user already exists")
+			response(w, 0, "The user already exists")
 		}
 
 	case "deleteUser":
@@ -161,13 +142,9 @@ func handler(w http.ResponseWriter, req *http.Request) {
 		if code == 1 {
 			code, msg := deleteUser(username.Username)
 
-			if code == 1 {
-				response(w, true, msg)
-			} else {
-				response(w, false, msg)
-			}
+			response(w, code, msg)
 		} else {
-			response(w, false, msg)
+			response(w, code, msg)
 		}
 
 		return
@@ -257,6 +234,6 @@ func handler(w http.ResponseWriter, req *http.Request) {
 		return
 
 	default:
-		response(w, false, "Comando inválido")
+		response(w, 0, "Please choose a valid option")
 	}
 }

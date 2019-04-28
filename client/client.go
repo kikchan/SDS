@@ -129,6 +129,7 @@ func menu(eleccion *int) {
 		"\nWelcome to MasterPass\n" +
 			"[ 1 ] Login\n" +
 			"[ 2 ] Register\n" +
+			"[ 3 ] Exit\n" +
 			"Choose an option: "
 
 	fmt.Print(menu)
@@ -271,6 +272,12 @@ func main() {
 			chk(err)
 			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
 			fmt.Println()
+
+		case 3:
+			clearScreen()
+
+			fmt.Println("Goodbye!")
+			return
 		default:
 			fmt.Println("Choose an option or press [Ctrl] + [C] to exit")
 		}
@@ -322,6 +329,7 @@ func logueado(client *http.Client, username string) {
 			fmt.Println()
 
 		case 5:
+			clearScreen()
 			fmt.Println("Logged out")
 			return
 
