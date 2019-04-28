@@ -32,6 +32,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -125,13 +126,10 @@ func decode64(s string) []byte {
 
 func menu(eleccion *int) {
 	menu :=
-		`
-		Bienvenido
-		[ 1 ] Login
-		[ 2 ] Register
-		¿Qué prefieres?
-
-	`
+		"\nWelcome to MasterPass\n" +
+			"[ 1 ] Login\n" +
+			"[ 2 ] Register\n" +
+			"Choose an option: "
 
 	fmt.Print(menu)
 
@@ -139,10 +137,10 @@ func menu(eleccion *int) {
 }
 
 func login(username *string, password *string) {
-	fmt.Printf("Insert username: ")
+	fmt.Printf("Username: ")
 	fmt.Scanln(username)
 
-	fmt.Printf("Insert password: ")
+	fmt.Printf("Password: ")
 	fmt.Scanln(password)
 }
 
@@ -164,14 +162,20 @@ func register(username *string, password *string, name *string, surname *string,
 	fmt.Scanln(email)
 }
 
+func clearScreen() {
+	c := exec.Command("clear")
+	c.Stdout = os.Stdout
+	c.Run()
+}
+
 func main() {
-	var puerto = "8080"
+	var port = "8080"
 
 	if len(os.Args) == 2 {
-		puerto = os.Args[1]
-		fmt.Println("Intentando conectar al puerto: " + puerto)
+		port = os.Args[1]
+		fmt.Println("Trying to establish connection with port: " + port)
 	} else {
-		fmt.Println("Intentando conectar al puerto: " + puerto + " (por defecto)")
+		fmt.Println("Trying to establish connection to default port: " + port)
 	}
 
 	var eleccion int //Declarar variable y tipo antes de escanear, esto es obligatorio
@@ -183,27 +187,18 @@ func main() {
 	}
 	client := &http.Client{Transport: tr}
 
-	// generamos un par de claves (privada, pública) para el servidor
-	pkClient, err := rsa.GenerateKey(rand.Reader, 1024)
-	chk(err)
-	pkClient.Precompute() // aceleramos su uso con un precálculo
-
-	pkJSON, err := json.Marshal(&pkClient) // codificamos con JSON
-	chk(err)
-
-	keyPub := pkClient.Public()           // extraemos la clave pública por separado
-	pubJSON, err := json.Marshal(&keyPub) // y codificamos con JSON
-	chk(err)
-
 	for {
 		menu(&eleccion)
 
 		switch eleccion {
 		case 1:
+			clearScreen()
+
 			var username string
 			var password string
 
-			fmt.Println("Iniciar sesión:")
+			fmt.Println("Log in:")
+			fmt.Println("-------------------")
 			login(&username, &password)
 
 			// hash con SHA512 de la contraseña
@@ -223,14 +218,29 @@ func main() {
 				logueado(client, username)
 			}
 		case 2:
+			clearScreen()
+
 			var username string
 			var password string
 			var name string
 			var surname string
 			var email string
 
-			fmt.Println("Registrar usuario:")
+			fmt.Println("Register:")
+			fmt.Println("-------------------")
 			register(&username, &password, &name, &surname, &email)
+
+			// generamos un par de claves (privada, pública) para el servidor
+			pkClient, err := rsa.GenerateKey(rand.Reader, 1024)
+			chk(err)
+			pkClient.Precompute() // aceleramos su uso con un precálculo
+
+			pkJSON, err := json.Marshal(&pkClient) // codificamos con JSON
+			chk(err)
+
+			keyPub := pkClient.Public()           // extraemos la clave pública por separado
+			pubJSON, err := json.Marshal(&keyPub) // y codificamos con JSON
+			chk(err)
 
 			// hash con SHA512 de la contraseña
 			keyClient := sha512.Sum512([]byte(password))
@@ -262,29 +272,30 @@ func main() {
 			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
 			fmt.Println()
 		default:
-			fmt.Println("No prefieres ninguno de ellos")
+			fmt.Println("Choose an option or press [Ctrl] + [C] to exit")
 		}
 	}
 }
 
 func menuLogueado(eleccion *int, username string) {
 	menuLogueado :=
-		`		
-		[ 1 ] Gestionar contraseñas de sitios web
-		[ 2 ] Gestionar tarjetas de cŕedito
-		[ 3 ] Gestionar notas
-		[ 4 ] Eliminar tu usuario
-		[ 5 ] Cerrar sesión
-		¿Qué prefieres?
-	`
-	fmt.Println()
-	fmt.Print(fmt.Sprintf("Bienvenido %s.", username))
+		"[ 1 ] Gestionar contraseñas de sitios web\n" +
+			"[ 2 ] Gestionar tarjetas de cŕedito\n" +
+			"[ 3 ] Gestionar notas\n" +
+			"[ 4 ] Eliminar tu usuario\n" +
+			"[ 5 ] Cerrar sesión\n" +
+			"Choose an option: "
+
+	fmt.Println(fmt.Sprintf("Welcome %s.\n", username))
 	fmt.Print(menuLogueado)
 	fmt.Scanln(eleccion)
 }
 
 func logueado(client *http.Client, username string) {
 	var eleccion int
+
+	clearScreen()
+
 	menuLogueado(&eleccion, username)
 
 	for {
@@ -311,11 +322,11 @@ func logueado(client *http.Client, username string) {
 			fmt.Println()
 
 		case 5:
-			fmt.Println("Hasta la vista.")
+			fmt.Println("Logged out")
 			return
 
 		default:
-			fmt.Println("No has seleccionado una opcion correcta.")
+			fmt.Println("Please choose a valid option")
 		}
 	}
 }

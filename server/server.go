@@ -31,6 +31,7 @@ type user struct {
 	ID       int
 	Username string
 	Password string
+	PubKey   string
 	Hash     []byte // hash de la contraseña
 	Salt     []byte // sal para la contraseña
 	Data     string
@@ -85,21 +86,6 @@ func response2(w http.ResponseWriter, msg string) {
 }
 
 func main() {
-	if true {
-		fmt.Println(createUser("kiril", "123456", "hash", "salt", "data"))
-		fmt.Println(findUser("kiril"))
-
-		fmt.Println(updatePassword("kiril", "password"))
-		fmt.Println(updateCard("kiril", "card"))
-		fmt.Println(updateNote("kiril", "note"))
-
-		fmt.Println(getUserPasswords("kiril"))
-		fmt.Println(getUserCards("kiril"))
-		fmt.Println(getUserNotes("kiril"))
-
-		fmt.Println(deleteUser("kiril"))
-	}
-
 	http.HandleFunc("/", handler) // asignamos un handler global
 
 	fmt.Println("Awaiting connections...")
@@ -116,59 +102,72 @@ func handler(w http.ResponseWriter, req *http.Request) {
 
 	switch req.Form.Get("cmd") { // comprobamos comando desde el cliente
 	case "login": // ** login
-		_, _, user := findUser(req.Form.Get("user"))
+		code, msg, user := findUser(req.Form.Get("user"))
 
-		password := decode64(req.Form.Get("pass")) // obtenemos la contraseña
+		if code == 1 {
+			password := decode64(req.Form.Get("pass")) // obtenemos la contraseña
 
-		hash, _ := scrypt.Key(password, user.Salt, 16384, 8, 1, 32) // scrypt(contraseña)
-		if bytes.Compare(user.Hash, hash) != 0 {                    // comparamos
-			response(w, false, "Credenciales inválidas")
-			return
+			hash, _ := scrypt.Key(password, user.Salt, 16384, 8, 1, 32) // scrypt(contraseña)
+
+			if bytes.Compare(user.Hash, hash) == 0 { // comparamos
+				response(w, true, "Logged in")
+			} else {
+				response(w, false, "Wrong credentials")
+			}
+		} else {
+			response(w, false, msg)
 		}
 
-		response(w, true, "Credenciales válidas")
+		return
 
 	case "register": // ** registro
-		code, _, _ := findUser(req.Form.Get("user"))
+		code, msg, _ := findUser(req.Form.Get("user"))
 		if code == -3 {
 			u := user{}
 			u.Username = req.Form.Get("user") // username
 			u.Data = req.Form.Get("userData")
 			u.Password = req.Form.Get("pass")
+			u.PubKey = req.Form.Get("pubkey")
 			u.Salt = make([]byte, 16) // sal (16 bytes == 128 bits)
 			rand.Read(u.Salt)         // la sal es aleatoria
 
 			//----------------------------------------------------
 			//		Aquí he cambiado u.Data por u.DataOld para que compile
-			u.DataOld = make(map[string]string)           // reservamos mapa de datos de usuario
-			u.DataOld["private"] = req.Form.Get("prikey") // clave privada
-			u.DataOld["public"] = req.Form.Get("pubkey")  // clave pública
-			password := decode64(req.Form.Get("pass"))    // contraseña (keyLogin)
+			//u.DataOld = make(map[string]string)           // reservamos mapa de datos de usuario
+			//u.DataOld["private"] = req.Form.Get("prikey") // clave privada
+			//u.DataOld["public"] = req.Form.Get("pubkey")  // clave pública
+			password := decode64(req.Form.Get("pass")) // contraseña (keyLogin)
 
 			// "hasheamos" la contraseña con scrypt
 			u.Hash, _ = scrypt.Key(password, u.Salt, 16384, 8, 1, 32)
 
-			code, _ = createUser(u.Username, u.Password, encode64(u.Hash), encode64(u.Salt), u.Data)
+			code, msg = createUser(u.Username, u.Password, u.PubKey, encode64(u.Hash), encode64(u.Salt), u.Data)
+
+			response(w, true, msg)
 
 			if code == 1 {
-				response(w, true, "Usuario registrado")
+				response(w, true, msg)
 
 			} else {
-				response(w, true, "Usuario no se ha podido registrar")
+				response(w, false, msg)
 			}
 		} else {
-			response(w, false, "Usuario ya registrado")
+			response(w, false, "The user already exists")
 		}
 
 	case "deleteUser":
-		_, _, username := findUser(req.Form.Get("username"))
-
-		code, _ := deleteUser(username.Username)
+		code, msg, username := findUser(req.Form.Get("username"))
 
 		if code == 1 {
-			fmt.Println("Usuario eliminado con éxito.")
+			code, msg := deleteUser(username.Username)
+
+			if code == 1 {
+				response(w, true, msg)
+			} else {
+				response(w, false, msg)
+			}
 		} else {
-			fmt.Println("El usuario no se puede eliminar.")
+			response(w, false, msg)
 		}
 
 		return

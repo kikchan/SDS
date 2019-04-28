@@ -16,7 +16,7 @@ import (
 	   -1: Error connecting to database
 	   -2: Error executing query
 */
-func createUser(user string, password string, hash string, salt string, data string) (int, string) {
+func createUser(user string, password string, pubKey string, hash string, salt string, data string) (int, string) {
 	var msg string
 	var code int
 
@@ -28,8 +28,8 @@ func createUser(user string, password string, hash string, salt string, data str
 
 	defer db.Close()
 
-	var query = "INSERT INTO users(username, password, hash, salt, data) " +
-		"VALUES ('" + user + "', '" + password + "', '" + hash + "', '" + salt + "', '" + data + "');"
+	var query = "INSERT INTO users(username, password, publicKey, hash, salt, data) " +
+		"VALUES ('" + user + "', '" + password + "', '" + pubKey + "', '" + hash + "', '" + salt + "', '" + data + "');"
 
 	insert, err := db.Query(query)
 
@@ -80,18 +80,19 @@ func findUser(username string) (int, string, user) {
 
 	if read.Next() {
 		var a int
-		var b, c, d, e, f string
+		var b, c, d, e, f, g string
 
-		err = read.Scan(&a, &b, &c, &d, &e, &f)
+		err = read.Scan(&a, &b, &c, &d, &e, &f, &g)
 
 		code = 1
 		msg = "Found user: " + username
 		user.ID = a
 		user.Username = b
 		user.Password = c
-		user.Hash = decode64(d)
-		user.Salt = decode64(e)
-		user.Data = f
+		user.PubKey = d
+		user.Hash = decode64(e)
+		user.Salt = decode64(f)
+		user.Data = g
 	} else {
 		code = -3
 		msg = "The user \"" + username + "\" doesn't exist"
