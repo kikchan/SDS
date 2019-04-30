@@ -350,7 +350,7 @@ func logueado(client *http.Client, username string) {
 		case 6:
 			clearScreen()
 			fmt.Println("Logged out")
-			return
+			main()
 
 		default:
 			fmt.Println("Please choose a valid option")
