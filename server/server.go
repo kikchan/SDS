@@ -42,6 +42,11 @@ type notesData struct {
 	Text string
 }
 
+type field struct {
+	Data    string
+	UserKey string
+}
+
 // función para codificar de []bytes a string (Base64)
 func encode64(data []byte) string {
 	return base64.StdEncoding.EncodeToString(data) // sólo utiliza caracteres "imprimibles"
@@ -83,6 +88,7 @@ func main() {
 	http.HandleFunc("/", handler) // asignamos un handler global
 
 	fmt.Println(shareField("kiril", "pass", 832, "contraseña enscriptada con AES", "usuario2##contraseña"))
+	fmt.Println(getSharedField("kiril", "pass", 832, "usuario2"))
 	fmt.Println(deleteShareField("kiril", "pass", 832))
 
 	fmt.Println("Awaiting connections...")
