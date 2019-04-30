@@ -72,10 +72,9 @@ type notesData struct {
 }
 
 type userData struct {
-	Name    string
-	Surname string
-	Email   string
-
+	Name       string
+	Surname    string
+	Email      string
 	PrivateKey string
 }
 

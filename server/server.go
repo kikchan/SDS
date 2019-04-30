@@ -82,6 +82,9 @@ func response2(w http.ResponseWriter, msg string) {
 func main() {
 	http.HandleFunc("/", handler) // asignamos un handler global
 
+	fmt.Println(shareField("kiril", "pass", 832, "contraseña enscriptada con AES", "usuario2##contraseña"))
+	fmt.Println(deleteShareField("kiril", "pass", 832))
+
 	fmt.Println("Awaiting connections...")
 
 	// escuchamos el puerto 8080 con https y comprobamos el error

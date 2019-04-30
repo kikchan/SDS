@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"strconv"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -407,6 +408,91 @@ func getUserNotes(user string) (int, string) {
 				code = 1
 				msg = a
 			}
+		}
+	}
+
+	return code, msg
+}
+
+/*
+	SHARES AN ENCRYPTED FIELD WITH A NUMBER OF USERS.
+
+	Returns:
+		1: OK
+	   -1: Error connecting to database
+	   -2: Error executing query
+	   -3: The user doesn't exist
+*/
+func shareField(user string, typeF string, fieldID int, data string, userKey string) (int, string) {
+	var msg string
+	var code int
+
+	db, err := sql.Open("mysql", DB_Username+":"+DB_Password+"@"+DB_Protocol+"("+DB_IP+":"+DB_Port+")/"+DB_Name)
+	if err != nil {
+		code = -1
+		msg = err.Error()
+	}
+
+	defer db.Close()
+
+	code, msg, _ = findUser(user)
+
+	if code == 1 {
+		var query = "INSERT INTO shares(user, type, fieldId, data, user_key) " +
+			"VALUES ('" + user + "', '" + typeF + "'," + strconv.Itoa(fieldID) + ", '" + data + "', '" + userKey + "');"
+
+		insert, err := db.Query(query)
+
+		if err != nil {
+			code = -2
+			msg = err.Error()
+		} else {
+			defer insert.Close()
+
+			code = 1
+			msg = "Field successfully shared"
+		}
+	}
+
+	return code, msg
+}
+
+/*
+	DELETES A SHARED FIELD.
+
+	Returns:
+		1: OK
+	   -1: Error connecting to database
+	   -2: Error executing query
+	   -3: The user doesn't exist
+*/
+func deleteShareField(user string, typeF string, fieldID int) (int, string) {
+	var msg string
+	var code int
+
+	db, err := sql.Open("mysql", DB_Username+":"+DB_Password+"@"+DB_Protocol+"("+DB_IP+":"+DB_Port+")/"+DB_Name)
+	if err != nil {
+		code = -1
+		msg = err.Error()
+	}
+
+	defer db.Close()
+
+	code, msg, _ = findUser(user)
+
+	if code == 1 {
+		var query = "DELETE FROM shares WHERE user='" + user + "' AND type='" + typeF + "' AND fieldId=" + strconv.Itoa(fieldID) + ";"
+
+		insert, err := db.Query(query)
+
+		if err != nil {
+			code = -2
+			msg = err.Error()
+		} else {
+			defer insert.Close()
+
+			code = 1
+			msg = "Field successfully deleted"
 		}
 	}
 
