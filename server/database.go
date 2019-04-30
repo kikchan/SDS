@@ -458,16 +458,16 @@ func shareField(user string, typeF string, fieldID int, data string, userKey str
 }
 
 /*
-	RETREIVES A SHARED FIELD.
+	RETREIVES A SHARED FIELD FOR A GIVEN USER.
 
 	Returns:
 		1: OK
 	   -1: Error connecting to database
 	   -2: Error executing query
 	   -3: The user doesn't exist
-	   -7: No shared field was found
+	   -7: The field doesn't exist
 */
-func getSharedField(user string, typeF string, fieldID int, userDest string) (int, string, field) {
+func getSharedFieldForUser(user string, typeF string, fieldID int, userDest string) (int, string, field) {
 	var msg string
 	var code int
 	var field field
@@ -506,7 +506,64 @@ func getSharedField(user string, typeF string, fieldID int, userDest string) (in
 				field.UserKey = b
 			} else {
 				code = -7
-				msg = "No fields were found"
+				msg = "The field doesn't exist"
+			}
+		}
+	}
+
+	return code, msg, field
+}
+
+/*
+	RETREIVES A SHARED FIELD.
+
+	Returns:
+		1: OK
+	   -1: Error connecting to database
+	   -2: Error executing query
+	   -3: The user doesn't exist
+	   -7: The field doesn't exist
+*/
+func getSharedField(user string, typeF string, fieldID int) (int, string, field) {
+	var msg string
+	var code int
+	var field field
+
+	db, err := sql.Open("mysql", DB_Username+":"+DB_Password+"@"+DB_Protocol+"("+DB_IP+":"+DB_Port+")/"+DB_Name)
+	if err != nil {
+		code = -1
+		msg = err.Error()
+	}
+
+	defer db.Close()
+
+	code, msg, _ = findUser(user)
+
+	if code == 1 {
+		var query = "SELECT data, user_key FROM shares WHERE user='" + user + "' AND type='" + typeF +
+			"' AND fieldId=" + strconv.Itoa(fieldID) + ";"
+
+		read, err := db.Query(query)
+
+		if err != nil {
+			code = -2
+			msg = err.Error()
+		} else {
+			defer read.Close()
+
+			if read.Next() {
+				var a, b string
+
+				err = read.Scan(&a, &b)
+
+				code = 1
+				msg = "The requested field was found"
+
+				field.Data = a
+				field.UserKey = b
+			} else {
+				code = -7
+				msg = "The field doesn't exist"
 			}
 		}
 	}
@@ -522,6 +579,7 @@ func getSharedField(user string, typeF string, fieldID int, userDest string) (in
 	   -1: Error connecting to database
 	   -2: Error executing query
 	   -3: The user doesn't exist
+	   -7: The field doesn't exist
 */
 func deleteShareField(user string, typeF string, fieldID int) (int, string) {
 	var msg string
@@ -538,18 +596,22 @@ func deleteShareField(user string, typeF string, fieldID int) (int, string) {
 	code, msg, _ = findUser(user)
 
 	if code == 1 {
-		var query = "DELETE FROM shares WHERE user='" + user + "' AND type='" + typeF + "' AND fieldId=" + strconv.Itoa(fieldID) + ";"
+		code, msg, _ = getSharedField(user, typeF, fieldID)
 
-		delete, err := db.Query(query)
+		if code == 1 {
+			var query = "DELETE FROM shares WHERE user='" + user + "' AND type='" + typeF + "' AND fieldId=" + strconv.Itoa(fieldID) + ";"
 
-		if err != nil {
-			code = -2
-			msg = err.Error()
-		} else {
-			defer delete.Close()
+			delete, err := db.Query(query)
 
-			code = 1
-			msg = "Field successfully deleted"
+			if err != nil {
+				code = -2
+				msg = err.Error()
+			} else {
+				defer delete.Close()
+
+				code = 1
+				msg = "Field successfully deleted"
+			}
 		}
 	}
 
