@@ -75,6 +75,8 @@ type userData struct {
 	Name    string
 	Surname string
 	Email   string
+
+	PrivateKey string
 }
 
 // ejemplo de tipo para un usuario
@@ -248,7 +250,7 @@ func main() {
 			keyLogin := keyClient[:32]  // una mitad para el login (256 bits)
 			keyData := keyClient[32:64] // la otra para los datos (256 bits)
 
-			a := &userData{name, surname, email}
+			a := &userData{name, surname, email, encode64(encrypt(compress(pkJSON), keyData))}
 
 			out, err := json.Marshal(a)
 			if err != nil {
@@ -290,7 +292,8 @@ func menuLogueado(eleccion *int, username string) {
 			"[ 2 ] Gestionar tarjetas de cŕedito\n" +
 			"[ 3 ] Gestionar notas\n" +
 			"[ 4 ] Eliminar tu usuario\n" +
-			"[ 5 ] Cerrar sesión\n" +
+			"[ 5 ] Compartir contraseña\n" +
+			"[ 6 ] Cerrar sesión\n" +
 			"Choose an option: "
 
 	fmt.Println(fmt.Sprintf("Welcome %s.\n", username))
@@ -329,7 +332,11 @@ func logueado(client *http.Client, username string) {
 			fmt.Println()
 			return
 
-		case 5:
+		case 5: //Share passwords
+
+			return
+
+		case 6:
 			clearScreen()
 			fmt.Println("Logged out")
 			return
