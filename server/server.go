@@ -90,6 +90,7 @@ func main() {
 	fmt.Println(shareField("kiril", "pass", 832, "contraseña enscriptada con AES", "usuario2##contraseña"))
 	fmt.Println(getSharedFieldForUser("kiril", "pass", 832, "usuario2"))
 	fmt.Println(getSharedFieldForUser("kiril", "pass", 832, "usuario3"))
+	fmt.Println(updateShareField("kiril", "pass", 832, "hola"))
 	fmt.Println(getSharedField("kiril", "pass", 832))
 	fmt.Println(deleteShareField("kiril", "pass", 832))
 
