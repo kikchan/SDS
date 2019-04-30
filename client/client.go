@@ -200,26 +200,38 @@ func main() {
 			var username string
 			var password string
 
+			var i int
 			fmt.Println("Log in:")
 			fmt.Println("-------------------")
-			login(&username, &password)
 
-			// hash con SHA512 de la contraseña
-			keyClient := sha512.Sum512([]byte(password))
-			keyLogin := keyClient[:32] // una mitad para el login (256 bits)
+			for i = 2; i >= 0; i-- {
+				login(&username, &password)
 
-			// ** ejemplo de login
-			data := url.Values{}
-			data.Set("cmd", "login")             // comando (string)
-			data.Set("user", username)           // usuario (string)
-			data.Set("pass", encode64(keyLogin)) // contraseña (a base64 porque es []byte)
-			r, err := client.PostForm("https://localhost:8080", data)
-			chk(err)
-			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
+				// hash con SHA512 de la contraseña
+				keyClient := sha512.Sum512([]byte(password))
+				keyLogin := keyClient[:32] // una mitad para el login (256 bits)
 
-			if r.StatusCode == 200 {
-				logueado(client, username)
+				data := url.Values{}
+				data.Set("cmd", "login")             // comando (string)
+				data.Set("user", username)           // usuario (string)
+				data.Set("pass", encode64(keyLogin)) // contraseña (a base64 porque es []byte)
+				r, err := client.PostForm("https://localhost:8080", data)
+				chk(err)
+
+				if r.StatusCode == 200 {
+					logueado(client, username)
+				} else {
+					fmt.Println("CONTRASEÑA INVÁLIDA, te quedan", i, "intentos.")
+					fmt.Println()
+				}
+				if i == 0 {
+					fmt.Println("No podrás volver a intentarlo hasta dentro de 5 minutos.")
+					time.Sleep(5 * time.Minute)
+					fmt.Println("Ya puedes volver a intentarlo.")
+					i = 3
+				}
 			}
+
 		case 2:
 			clearScreen()
 
@@ -257,7 +269,6 @@ func main() {
 				panic(err)
 			}
 
-			// ** ejemplo de registro
 			data := url.Values{}                 // estructura para contener los valores
 			data.Set("cmd", "register")          // comando (string)
 			data.Set("user", username)           // usuario (string)
@@ -268,7 +279,7 @@ func main() {
 			data.Set("pubkey", encode64(compress(pubJSON)))
 
 			// comprimimos, ciframos y codificamos la clave privada
-			data.Set("prikey", encode64(encrypt(compress(pkJSON), keyData)))
+			//data.Set("prikey", encode64(encrypt(compress(pkJSON), keyData)))
 
 			r, err := client.PostForm("https://localhost:8080", data) // enviamos por POST
 			chk(err)
