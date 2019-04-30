@@ -327,6 +327,7 @@ func logueado(client *http.Client, username string) {
 			chk(err)
 			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
 			fmt.Println()
+			return
 
 		case 5:
 			clearScreen()
