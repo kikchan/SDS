@@ -54,20 +54,21 @@ func main() {
 
 		if err == nil {
 			var response resp
+			var exit = false
 			body, _ := ioutil.ReadAll(r.Body)
 			dec := json.NewDecoder(strings.NewReader(string(body)))
 
 			dec.Decode(&response)
 			fmt.Println(response.Msg)
 
-			for {
+			for !exit {
 				if clear {
 					clearScreen()
 				} else {
 					clear = true
 				}
 
-				publicMenu(client)
+				exit = publicMenu(client)
 			}
 		} else {
 			fmt.Println("Could not establish connection with requested server")
@@ -78,7 +79,7 @@ func main() {
 	}
 }
 
-func publicMenu(client *http.Client) {
+func publicMenu(client *http.Client) bool {
 	var option int
 	data := url.Values{} //Request structure
 
@@ -185,9 +186,13 @@ func publicMenu(client *http.Client) {
 		clearScreen()
 
 		fmt.Println("Goodbye!")
+		return true
+
 	default:
 		fmt.Println("Choose an option or press [Ctrl] + [C] to exit")
 	}
+
+	return false
 }
 
 func logged(client *http.Client, username string) {

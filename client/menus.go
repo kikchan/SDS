@@ -15,6 +15,8 @@ func menu(option *int) {
 }
 
 func menuLogged(option *int, username string) {
+	fmt.Println(fmt.Sprintf("Welcome %s.\n", username))
+
 	menuLogged :=
 		"[ 1 ] Manage passwords\n" +
 			"[ 2 ] Manage cards\n" +
@@ -23,7 +25,6 @@ func menuLogged(option *int, username string) {
 			"[ 5 ] Logout\n" +
 			"Choice: "
 
-	fmt.Println(fmt.Sprintf("Welcome %s.\n", username))
 	fmt.Print(menuLogged)
 	fmt.Scanln(option)
 }
