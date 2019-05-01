@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 
 	_ "github.com/go-sql-driver/mysql"
 	"golang.org/x/crypto/scrypt"
@@ -85,21 +86,21 @@ func response2(w http.ResponseWriter, msg string) {
 }
 
 func main() {
+	var port = "8080"
+
+	if len(os.Args) == 2 {
+		port = os.Args[1]
+		fmt.Println("Awaiting connections through port: " + port)
+	} else {
+		fmt.Println("Awaiting connections through default port " + port)
+	}
+
 	http.HandleFunc("/", handler) // asignamos un handler global
-
-	fmt.Println(shareField("kiril", "pass", 832, "contraseña enscriptada con AES", "usuario2##contraseña"))
-	fmt.Println(getSharedFieldForUser("kiril", "pass", 832, "usuario2"))
-	fmt.Println(getSharedFieldForUser("kiril", "pass", 832, "usuario3"))
-	fmt.Println(updateShareField("kiril", "pass", 832, "hola"))
-	fmt.Println(getSharedField("kiril", "pass", 832))
-	fmt.Println(deleteShareField("kiril", "pass", 832))
-
-	fmt.Println("Awaiting connections...")
 
 	// escuchamos el puerto 8080 con https y comprobamos el error
 	// Para generar certificados autofirmados con openssl usar:
 	//    openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes -subj "/C=ES/ST=Alicante/L=Alicante/O=UA/OU=Org/CN=www.ua.com"
-	chk(http.ListenAndServeTLS(":8080", "cert.pem", "key.pem", nil))
+	chk(http.ListenAndServeTLS(":"+port, "cert.pem", "key.pem", nil))
 }
 
 func handler(w http.ResponseWriter, req *http.Request) {
@@ -244,6 +245,10 @@ func handler(w http.ResponseWriter, req *http.Request) {
 		}
 
 		return
+
+	case "check":
+		response(w, 1, "Connection succsessful!")
+		fmt.Println("A client just connected!")
 
 	default:
 		response(w, 0, "Please choose a valid option")

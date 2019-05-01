@@ -46,9 +46,7 @@ import (
 // función para comprobar errores (ahorra escritura)
 func chk(e error) {
 	if e != nil {
-		//panic(e)
-		fmt.Println("No se ha podido establecer una conexión con el servidor a través del puerto indicado")
-		os.Exit(1)
+		panic(e)
 	}
 }
 
@@ -170,156 +168,176 @@ func clearScreen() {
 	c.Run()
 }
 
+//Default server address
+var SERVER_IP string = "https://localhost"
+var SERVER_PORT string = "8080"
+var SERVER string = SERVER_IP + ":" + SERVER_PORT
+
 func main() {
-	var port = "8080"
+	if len(os.Args) == 1 || len(os.Args) == 3 {
+		if len(os.Args) == 3 {
+			SERVER_IP = os.Args[1]
+			SERVER_PORT = os.Args[2]
 
-	if len(os.Args) == 2 {
-		port = os.Args[1]
-		fmt.Println("Trying to establish connection with port: " + port)
-	} else {
-		fmt.Println("Trying to establish connection to default port: " + port)
-	}
-
-	var eleccion int //Declarar variable y tipo antes de escanear, esto es obligatorio
-
-	/* creamos un cliente especial que no comprueba la validez de los certificados
-	esto es necesario por que usamos certificados autofirmados (para pruebas) */
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}
-	client := &http.Client{Transport: tr}
-
-	for {
-		menu(&eleccion)
-
-		switch eleccion {
-		case 1:
-			clearScreen()
-
-			var username string
-			var password string
-
-			var i int
-			fmt.Println("Log in:")
-			fmt.Println("-------------------")
-
-			for i = 2; i >= 0; i-- {
-				login(&username, &password)
-
-				// hash con SHA512 de la contraseña
-				keyClient := sha512.Sum512([]byte(password))
-				keyLogin := keyClient[:32] // una mitad para el login (256 bits)
-
-				data := url.Values{}
-				data.Set("cmd", "login")             // comando (string)
-				data.Set("user", username)           // usuario (string)
-				data.Set("pass", encode64(keyLogin)) // contraseña (a base64 porque es []byte)
-				r, err := client.PostForm("https://localhost:8080", data)
-				chk(err)
-
-				if r.StatusCode == 200 {
-					logueado(client, username)
-				} else {
-					fmt.Println("CONTRASEÑA INVÁLIDA, te quedan", i, "intentos.")
-					fmt.Println()
-				}
-				if i == 0 {
-					fmt.Println("No podrás volver a intentarlo hasta dentro de 5 minutos.")
-					time.Sleep(5 * time.Minute)
-					fmt.Println("Ya puedes volver a intentarlo.")
-					i = 3
-				}
-			}
-
-		case 2:
-			clearScreen()
-
-			var username string
-			var password string
-			var name string
-			var surname string
-			var email string
-
-			fmt.Println("Register:")
-			fmt.Println("-------------------")
-			register(&username, &password, &name, &surname, &email)
-
-			// generamos un par de claves (privada, pública) para el servidor
-			pkClient, err := rsa.GenerateKey(rand.Reader, 1024)
-			chk(err)
-			pkClient.Precompute() // aceleramos su uso con un precálculo
-
-			pkJSON, err := json.Marshal(&pkClient) // codificamos con JSON
-			chk(err)
-
-			keyPub := pkClient.Public()           // extraemos la clave pública por separado
-			pubJSON, err := json.Marshal(&keyPub) // y codificamos con JSON
-			chk(err)
-
-			// hash con SHA512 de la contraseña
-			keyClient := sha512.Sum512([]byte(password))
-			keyLogin := keyClient[:32]  // una mitad para el login (256 bits)
-			keyData := keyClient[32:64] // la otra para los datos (256 bits)
-
-			a := &userData{name, surname, email, encode64(encrypt(compress(pkJSON), keyData))}
-
-			out, err := json.Marshal(a)
-			if err != nil {
-				panic(err)
-			}
-
-			data := url.Values{}                 // estructura para contener los valores
-			data.Set("cmd", "register")          // comando (string)
-			data.Set("user", username)           // usuario (string)
-			data.Set("pass", encode64(keyLogin)) // "contraseña" a base64
-			data.Set("userData", encode64(out))
-
-			// comprimimos y codificamos la clave pública
-			data.Set("pubkey", encode64(compress(pubJSON)))
-
-			// comprimimos, ciframos y codificamos la clave privada
-			//data.Set("prikey", encode64(encrypt(compress(pkJSON), keyData)))
-
-			r, err := client.PostForm("https://localhost:8080", data) // enviamos por POST
-			chk(err)
-			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
-			fmt.Println()
-
-		case 3:
-			clearScreen()
-
-			fmt.Println("Goodbye!")
-			return
-		default:
-			fmt.Println("Choose an option or press [Ctrl] + [C] to exit")
+			fmt.Println("Trying to establish connection with " + SERVER)
+		} else if len(os.Args) == 1 {
+			fmt.Println("Trying to establish local connection to default port: " + SERVER_PORT)
 		}
+
+		var eleccion int     //Declarar variable y tipo antes de escanear, esto es obligatorio
+		data := url.Values{} // estructura para contener los valores
+
+		/* creamos un cliente especial que no comprueba la validez de los certificados
+		esto es necesario por que usamos certificados autofirmados (para pruebas) */
+		tr := &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}
+		client := &http.Client{Transport: tr}
+
+		data.Set("cmd", "check")
+
+		_, err := client.PostForm(SERVER, data)
+
+		if err == nil {
+			for {
+				fmt.Println("Connection successful!")
+
+				menu(&eleccion)
+
+				switch eleccion {
+				case 1:
+					clearScreen()
+
+					var username string
+					var password string
+					data := url.Values{} // estructura para contener los valores
+
+					var i int
+					fmt.Println("Log in:")
+					fmt.Println("-------------------")
+
+					for i = 2; i >= 0; i-- {
+						login(&username, &password)
+
+						// hash con SHA512 de la contraseña
+						keyClient := sha512.Sum512([]byte(password))
+						keyLogin := keyClient[:32] // una mitad para el login (256 bits)
+
+						data.Set("cmd", "login")             // comando (string)
+						data.Set("user", username)           // usuario (string)
+						data.Set("pass", encode64(keyLogin)) // contraseña (a base64 porque es []byte)
+						r, err := client.PostForm("https://localhost:8080", data)
+						chk(err)
+
+						if r.StatusCode == 200 {
+							logueado(client, username)
+						} else {
+							fmt.Println("CONTRASEÑA INVÁLIDA, te quedan", i, "intentos.")
+							fmt.Println()
+						}
+						if i == 0 {
+							fmt.Println("No podrás volver a intentarlo hasta dentro de 5 minutos.")
+							time.Sleep(5 * time.Minute)
+							fmt.Println("Ya puedes volver a intentarlo.")
+							i = 3
+						}
+					}
+
+				case 2:
+					clearScreen()
+
+					var username string
+					var password string
+					var name string
+					var surname string
+					var email string
+
+					fmt.Println("Register:")
+					fmt.Println("-------------------")
+					register(&username, &password, &name, &surname, &email)
+
+					// generamos un par de claves (privada, pública) para el servidor
+					pkClient, err := rsa.GenerateKey(rand.Reader, 1024)
+					chk(err)
+					pkClient.Precompute() // aceleramos su uso con un precálculo
+
+					pkJSON, err := json.Marshal(&pkClient) // codificamos con JSON
+					chk(err)
+
+					keyPub := pkClient.Public()           // extraemos la clave pública por separado
+					pubJSON, err := json.Marshal(&keyPub) // y codificamos con JSON
+					chk(err)
+
+					// hash con SHA512 de la contraseña
+					keyClient := sha512.Sum512([]byte(password))
+					keyLogin := keyClient[:32]  // una mitad para el login (256 bits)
+					keyData := keyClient[32:64] // la otra para los datos (256 bits)
+
+					a := &userData{name, surname, email, encode64(encrypt(compress(pkJSON), keyData))}
+
+					out, err := json.Marshal(a)
+					if err != nil {
+						panic(err)
+					}
+
+					data.Set("cmd", "register")          // comando (string)
+					data.Set("user", username)           // usuario (string)
+					data.Set("pass", encode64(keyLogin)) // "contraseña" a base64
+					data.Set("userData", encode64(out))
+
+					// comprimimos y codificamos la clave pública
+					data.Set("pubkey", encode64(compress(pubJSON)))
+
+					// comprimimos, ciframos y codificamos la clave privada
+					//data.Set("prikey", encode64(encrypt(compress(pkJSON), keyData)))
+
+					r, err := client.PostForm("https://localhost:8080", data) // enviamos por POST
+					chk(err)
+					io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
+					fmt.Println()
+
+				case 3:
+					clearScreen()
+
+					fmt.Println("Goodbye!")
+					return
+				default:
+					fmt.Println("Choose an option or press [Ctrl] + [C] to exit")
+				}
+			}
+		} else {
+			fmt.Println("Could not establish connection with requested server")
+		}
+	} else {
+		fmt.Println("Bad arguments. The correct sintax is: [programName] [server] [port]")
+		fmt.Println("An example: \"go run client.go https://localhost 8080\"")
 	}
 }
 
-func menuLogueado(eleccion *int, username string) {
-	menuLogueado :=
-		"[ 1 ] Gestionar contraseñas de sitios web\n" +
-			"[ 2 ] Gestionar tarjetas de cŕedito\n" +
-			"[ 3 ] Gestionar notas\n" +
-			"[ 4 ] Eliminar tu usuario\n" +
-			"[ 5 ] Compartir contraseña\n" +
-			"[ 6 ] Cerrar sesión\n" +
+func menuLogged(option *int, username string) {
+	menuLogged :=
+		"[ 1 ] Manage passwords\n" +
+			"[ 2 ] Manage cards\n" +
+			"[ 3 ] Manage notes\n" +
+			"[ 4 ] Settings\n" +
+			"[ 5 ] Logout\n" +
 			"Choose an option: "
 
 	fmt.Println(fmt.Sprintf("Welcome %s.\n", username))
-	fmt.Print(menuLogueado)
-	fmt.Scanln(eleccion)
+	fmt.Print(menuLogged)
+	fmt.Scanln(option)
 }
 
 func logueado(client *http.Client, username string) {
-	var eleccion int
+	var option int
+	data := url.Values{} // estructura para contener los valores
 
 	clearScreen()
 
-	menuLogueado(&eleccion, username)
+	menuLogged(&option, username)
 
 	for {
-		switch eleccion {
+		switch option {
 		case 1: //GestionContraseñas
 			gestionContraseñas(client, username)
 
@@ -330,10 +348,7 @@ func logueado(client *http.Client, username string) {
 			gestionNotas(client, username)
 
 		case 4:
-			data := url.Values{} // estructura para contener los valores
-
-			data.Set("cmd", "deleteUser") // comando (string)
-
+			data.Set("cmd", "deleteUser")  // comando (string)
 			data.Set("username", username) // usuario (string)
 
 			r, err := client.PostForm("https://localhost:8080", data) // enviamos por POST
@@ -357,7 +372,7 @@ func logueado(client *http.Client, username string) {
 	}
 }
 
-func menuGestionContraseña(eleccion *int) {
+func menuGestionContraseña(option *int) {
 	menuGestionContraseña :=
 		`		
 		[ 1 ] Añadir contraseñas
@@ -368,12 +383,11 @@ func menuGestionContraseña(eleccion *int) {
 		¿Qué prefieres?
 	`
 	fmt.Print(menuGestionContraseña)
-	fmt.Scanln(eleccion)
+	fmt.Scanln(option)
 }
 
 func gestionContraseñas(client *http.Client, username string) {
 	contraseñas := make(map[int]passwordsData)
-
 	data := url.Values{} // estructura para contener los valores
 
 	data.Set("cmd", "Passwords") // comando (string)
@@ -399,11 +413,11 @@ func gestionContraseñas(client *http.Client, username string) {
 	}
 	//------------------------------------------------------------------------
 
-	var eleccion int
-	menuGestionContraseña(&eleccion)
+	var option int
+	menuGestionContraseña(&option)
 
 	for {
-		switch eleccion {
+		switch option {
 		case 1: //addPassword
 			newPassword := passwordsData{}
 
@@ -608,13 +622,13 @@ func gestionContraseñas(client *http.Client, username string) {
 			return
 
 		default:
-			fmt.Println("No has seleccionado una opcion correcta.")
+			fmt.Println("No has soptionado una opcion correcta.")
 
 		}
 	}
 }
 
-func menuGestionTarjetas(eleccion *int) {
+func menuGestionTarjetas(option *int) {
 	menuGestionTarjetas :=
 		`		
 		[ 1 ] Añadir tarjeta	
@@ -625,7 +639,7 @@ func menuGestionTarjetas(eleccion *int) {
 		¿Qué prefieres?
 	`
 	fmt.Print(menuGestionTarjetas)
-	fmt.Scanln(eleccion)
+	fmt.Scanln(option)
 }
 
 func gestionTarjetas(client *http.Client, username string) {
@@ -656,11 +670,11 @@ func gestionTarjetas(client *http.Client, username string) {
 	}
 	//------------------------------------------------------------------------
 
-	var eleccion int
-	menuGestionTarjetas(&eleccion)
+	var option int
+	menuGestionTarjetas(&option)
 
 	for {
-		switch eleccion {
+		switch option {
 		case 1: //addCard
 			newCard := cardsData{}
 
@@ -807,13 +821,13 @@ func gestionTarjetas(client *http.Client, username string) {
 			return
 
 		default:
-			fmt.Println("No has seleccionado una opcion correcta.")
+			fmt.Println("No has soptionado una opcion correcta.")
 
 		}
 	}
 }
 
-func menuGestionNotas(eleccion *int) {
+func menuGestionNotas(option *int) {
 	menuGestionNotas :=
 		`		
 		[ 1 ] Añadir nota
@@ -824,7 +838,7 @@ func menuGestionNotas(eleccion *int) {
 		¿Qué prefieres?
 	`
 	fmt.Print(menuGestionNotas)
-	fmt.Scanln(eleccion)
+	fmt.Scanln(option)
 }
 
 func gestionNotas(client *http.Client, username string) {
@@ -855,11 +869,11 @@ func gestionNotas(client *http.Client, username string) {
 	}
 	//------------------------------------------------------------------------
 
-	var eleccion int
-	menuGestionNotas(&eleccion)
+	var option int
+	menuGestionNotas(&option)
 
 	for {
-		switch eleccion {
+		switch option {
 		case 1: //add note
 			newNota := notesData{}
 
