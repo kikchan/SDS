@@ -11,7 +11,7 @@
 > go get -u github.com/sethvargo/go-password/password
 
 #### Para arrancar el servidor, situarse en la carpeta de este y ejecutar:
-> go run *.
+> go run *.go [Puerto del servidor]
 
 #### Para arrancar el cliente, situarse en la carpeta de este y ejecutar:
-> go run *.
+> go run *.go [IP del servidor] [Puerto del servidor]
