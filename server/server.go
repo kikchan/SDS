@@ -247,9 +247,9 @@ func handler(w http.ResponseWriter, req *http.Request) {
 		return
 
 	case "check":
-		response(w, 1, "Connection succsessful!")
+		response(w, 1, "Connection established!")
 
-		fmt.Println("A client just connected!")
+		fmt.Println("A client just connected from IP: " + req.Form.Get("address") + "!")
 
 	default:
 		response(w, 0, "Please choose a valid option")

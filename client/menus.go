@@ -1,11 +1,15 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+
+	. "github.com/logrusorgru/aurora"
+)
 
 func menu(option *int) {
+	fmt.Println("MasterPass\n")
 	menu :=
-		"\nWelcome to MasterPass\n" +
-			"[ 1 ] Login\n" +
+		"[ 1 ] Login\n" +
 			"[ 2 ] Register\n" +
 			"[ 3 ] Exit\n" +
 			"Choice: "
@@ -15,10 +19,12 @@ func menu(option *int) {
 }
 
 func menuLogged(option *int, username string) {
-	fmt.Println(fmt.Sprintf("Welcome %s.\n", username))
+	fmt.Println(fmt.Sprintf("Welcome %s.\n", Bold(Cyan(username))))
 
 	menuLogged :=
-		"[ 1 ] Manage passwords\n" +
+		"Private menu\n" +
+			"----------------------\n" +
+			"[ 1 ] Manage passwords\n" +
 			"[ 2 ] Manage cards\n" +
 			"[ 3 ] Manage notes\n" +
 			"[ 4 ] User settings\n" +

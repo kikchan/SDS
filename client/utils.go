@@ -7,6 +7,8 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"encoding/base64"
+	"log"
+	"net"
 	"os"
 	"os/exec"
 )
@@ -55,4 +57,15 @@ func decode64(s string) []byte {
 	b, err := base64.StdEncoding.DecodeString(s) //Decode the string
 	chk(err)                                     //Check if there's any error
 	return b
+}
+
+//Get the IP of the client machine
+func GetAddress() string {
+	conn, err := net.Dial("udp", "8.8.8.8:80")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer conn.Close()
+
+	return conn.LocalAddr().String()
 }
