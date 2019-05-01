@@ -1,172 +1,23 @@
-/*
-
-Este programa demuestra una arquitectura cliente servidor sencilla.
-El cliente envía líneas desde la entrada estandar y el servidor le devuelve un reconomiento de llegada (acknowledge).
-El servidor es concurrente, siendo capaz de manejar múltiples clientes simultáneamente.
-Las entradas se procesan mediante un scanner (bufio).
-
-ejemplos de uso:
-
-go run cnx.go srv
-
-go run cnx.go cli
-
-*/
-
 package main
 
 import (
-	"bytes"
-	"compress/zlib"
-	"crypto/aes"
-	"crypto/cipher"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha512"
 	"crypto/tls"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
-	"os/exec"
 	"strings"
 	"time"
 
-	//"net/http"
-	//"crypto/tls"
-	"io"
-
 	"github.com/sethvargo/go-password/password"
 )
-
-// función para comprobar errores (ahorra escritura)
-func chk(e error) {
-	if e != nil {
-		panic(e)
-	}
-}
-
-type passwordsData struct {
-	Username string
-	Password string
-	Modified string
-	Site     string
-}
-
-type cardsData struct {
-	Pan    string
-	Ccv    string
-	Expiry string
-	Owner  string
-}
-
-type notesData struct {
-	Date string
-	Text string
-}
-
-type userData struct {
-	Name       string
-	Surname    string
-	Email      string
-	PrivateKey string
-}
-
-// ejemplo de tipo para un usuario
-type user struct {
-	username string            // nombre de usuario
-	password string            // Contraseña
-	Hash     []byte            // hash de la contraseña
-	Salt     []byte            // sal para la contraseña
-	Data     map[string]string // datos adicionales del usuario
-}
-
-// respuesta del servidor
-type resp struct {
-	Ok  bool   // true -> correcto, false -> error
-	Msg string // mensaje adicional
-}
-
-// función para cifrar (con AES en este caso), adjunta el IV al principio
-func encrypt(data, key []byte) (out []byte) {
-	out = make([]byte, len(data)+16)    // reservamos espacio para el IV al principio
-	rand.Read(out[:16])                 // generamos el IV
-	blk, err := aes.NewCipher(key)      // cifrador en bloque (AES), usa key
-	chk(err)                            // comprobamos el error
-	ctr := cipher.NewCTR(blk, out[:16]) // cifrador en flujo: modo CTR, usa IV
-	ctr.XORKeyStream(out[16:], data)    // ciframos los datos
-	return
-}
-
-// función para comprimir
-func compress(data []byte) []byte {
-	var b bytes.Buffer      // b contendrá los datos comprimidos (tamaño variable)
-	w := zlib.NewWriter(&b) // escritor que comprime sobre b
-	w.Write(data)           // escribimos los datos
-	w.Close()               // cerramos el escritor (buffering)
-	return b.Bytes()        // devolvemos los datos comprimidos
-}
-
-// función para codificar de []bytes a string (Base64)
-func encode64(data []byte) string {
-	return base64.StdEncoding.EncodeToString(data) // sólo utiliza caracteres "imprimibles"
-}
-
-// función para decodificar de string a []bytes (Base64)
-func decode64(s string) []byte {
-	b, err := base64.StdEncoding.DecodeString(s) // recupera el formato original
-	chk(err)                                     // comprobamos el error
-	return b                                     // devolvemos los datos originales
-}
-
-func menu(eleccion *int) {
-	menu :=
-		"\nWelcome to MasterPass\n" +
-			"[ 1 ] Login\n" +
-			"[ 2 ] Register\n" +
-			"[ 3 ] Exit\n" +
-			"Choose an option: "
-
-	fmt.Print(menu)
-
-	fmt.Scanln(eleccion)
-}
-
-func login(username *string, password *string) {
-	fmt.Printf("Username: ")
-	fmt.Scanln(username)
-
-	fmt.Printf("Password: ")
-	fmt.Scanln(password)
-}
-
-func register(username *string, password *string, name *string, surname *string, email *string) {
-
-	fmt.Println("Insert username:")
-	fmt.Scanln(username)
-
-	fmt.Println("Insert password:")
-	fmt.Scanln(password)
-
-	fmt.Println("Insert name:")
-	fmt.Scanln(name)
-
-	fmt.Println("Insert surname:")
-	fmt.Scanln(surname)
-
-	fmt.Println("Insert email:")
-	fmt.Scanln(email)
-}
-
-func clearScreen() {
-	c := exec.Command("clear")
-	c.Stdout = os.Stdout
-	c.Run()
-}
 
 //Default server address
 var SERVER_IP string = "https://localhost"
@@ -179,7 +30,7 @@ func main() {
 			SERVER_IP = os.Args[1]
 			SERVER_PORT = os.Args[2]
 
-			fmt.Println("Trying to establish connection with " + SERVER)
+			fmt.Println("Trying to establish connection with \"" + SERVER + "\"")
 		} else if len(os.Args) == 1 {
 			fmt.Println("Trying to establish local connection to default port: " + SERVER_PORT)
 		}
@@ -196,11 +47,12 @@ func main() {
 
 		data.Set("cmd", "check")
 
-		_, err := client.PostForm(SERVER, data)
+		r, err := client.PostForm(SERVER, data)
 
 		if err == nil {
 			for {
-				fmt.Println("Connection successful!")
+				io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
+				fmt.Println()
 
 				menu(&eleccion)
 
@@ -226,7 +78,7 @@ func main() {
 						data.Set("cmd", "login")             // comando (string)
 						data.Set("user", username)           // usuario (string)
 						data.Set("pass", encode64(keyLogin)) // contraseña (a base64 porque es []byte)
-						r, err := client.PostForm("https://localhost:8080", data)
+						r, err := client.PostForm(SERVER, data)
 						chk(err)
 
 						if r.StatusCode == 200 {
@@ -291,7 +143,7 @@ func main() {
 					// comprimimos, ciframos y codificamos la clave privada
 					//data.Set("prikey", encode64(encrypt(compress(pkJSON), keyData)))
 
-					r, err := client.PostForm("https://localhost:8080", data) // enviamos por POST
+					r, err := client.PostForm(SERVER, data) // enviamos por POST
 					chk(err)
 					io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
 					fmt.Println()
@@ -310,22 +162,34 @@ func main() {
 		}
 	} else {
 		fmt.Println("Bad arguments. The correct sintax is: [programName] [server] [port]")
-		fmt.Println("An example: \"go run client.go https://localhost 8080\"")
+		fmt.Println("An example: \"go run *.go https://localhost 8080\"")
 	}
 }
 
-func menuLogged(option *int, username string) {
-	menuLogged :=
-		"[ 1 ] Manage passwords\n" +
-			"[ 2 ] Manage cards\n" +
-			"[ 3 ] Manage notes\n" +
-			"[ 4 ] Settings\n" +
-			"[ 5 ] Logout\n" +
-			"Choose an option: "
+func login(username *string, password *string) {
+	fmt.Printf("Username: ")
+	fmt.Scanln(username)
 
-	fmt.Println(fmt.Sprintf("Welcome %s.\n", username))
-	fmt.Print(menuLogged)
-	fmt.Scanln(option)
+	fmt.Printf("Password: ")
+	fmt.Scanln(password)
+}
+
+func register(username *string, password *string, name *string, surname *string, email *string) {
+
+	fmt.Println("Insert username:")
+	fmt.Scanln(username)
+
+	fmt.Println("Insert password:")
+	fmt.Scanln(password)
+
+	fmt.Println("Insert name:")
+	fmt.Scanln(name)
+
+	fmt.Println("Insert surname:")
+	fmt.Scanln(surname)
+
+	fmt.Println("Insert email:")
+	fmt.Scanln(email)
 }
 
 func logueado(client *http.Client, username string) {
@@ -338,20 +202,20 @@ func logueado(client *http.Client, username string) {
 
 	for {
 		switch option {
-		case 1: //GestionContraseñas
-			gestionContraseñas(client, username)
+		case 1:
+			managePasswords(client, username)
 
 		case 2: //GestionCard
-			gestionTarjetas(client, username)
+			manageCards(client, username)
 
 		case 3: //GestionNote
-			gestionNotas(client, username)
+			manageNotes(client, username)
 
 		case 4:
 			data.Set("cmd", "deleteUser")  // comando (string)
 			data.Set("username", username) // usuario (string)
 
-			r, err := client.PostForm("https://localhost:8080", data) // enviamos por POST
+			r, err := client.PostForm(SERVER, data) // enviamos por POST
 			chk(err)
 			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
 			fmt.Println()
@@ -372,28 +236,14 @@ func logueado(client *http.Client, username string) {
 	}
 }
 
-func menuGestionContraseña(option *int) {
-	menuGestionContraseña :=
-		`		
-		[ 1 ] Añadir contraseñas
-		[ 2 ] Listar contraseñas
-		[ 3 ] Modificar contraseñas
-		[ 4 ] Eliminar contraseñas
-		[ 5 ] Ir atrás
-		¿Qué prefieres?
-	`
-	fmt.Print(menuGestionContraseña)
-	fmt.Scanln(option)
-}
-
-func gestionContraseñas(client *http.Client, username string) {
+func managePasswords(client *http.Client, username string) {
 	contraseñas := make(map[int]passwordsData)
 	data := url.Values{} // estructura para contener los valores
 
 	data.Set("cmd", "Passwords") // comando (string)
 	data.Set("username", username)
 
-	r, err := client.PostForm("https://localhost:8080/cards", data) // enviamos por POST
+	r, err := client.PostForm(SERVER + "/cards", data) // enviamos por POST
 	chk(err)
 
 	//--------- Con esto recojo del servidor las tarjetas y las convierto al struct
@@ -414,7 +264,7 @@ func gestionContraseñas(client *http.Client, username string) {
 	//------------------------------------------------------------------------
 
 	var option int
-	menuGestionContraseña(&option)
+	menuMngPasswords(&option)
 
 	for {
 		switch option {
@@ -489,7 +339,7 @@ func gestionContraseñas(client *http.Client, username string) {
 			data.Set("username", username)
 			data.Set("passwords", encode64(out))
 
-			r, err := client.PostForm("https://localhost:8080/passwords", data) // enviamos por POST
+			r, err := client.PostForm(SERVER + "/passwords", data) // enviamos por POST
 			chk(err)
 			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
 			fmt.Println()
@@ -580,7 +430,7 @@ func gestionContraseñas(client *http.Client, username string) {
 			data.Set("username", username)
 			data.Set("passwords", encode64(out))
 
-			r, err := client.PostForm("https://localhost:8080/passwords", data) // enviamos por POST
+			r, err := client.PostForm(SERVER + "/passwords", data) // enviamos por POST
 			chk(err)
 			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
 			fmt.Println()
@@ -611,7 +461,7 @@ func gestionContraseñas(client *http.Client, username string) {
 			data.Set("username", username)
 			data.Set("passwords", encode64(out))
 
-			r, err := client.PostForm("https://localhost:8080/passwords", data) // enviamos por POST
+			r, err := client.PostForm(SERVER + "/passwords", data) // enviamos por POST
 			chk(err)
 			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
 			fmt.Println()
@@ -628,21 +478,7 @@ func gestionContraseñas(client *http.Client, username string) {
 	}
 }
 
-func menuGestionTarjetas(option *int) {
-	menuGestionTarjetas :=
-		`		
-		[ 1 ] Añadir tarjeta	
-		[ 2 ] Listar tarjetas
-		[ 3 ] Modificar tarjeta
-		[ 4 ] Eliminar tarjeta
-		[ 5 ] Ir atrás
-		¿Qué prefieres?
-	`
-	fmt.Print(menuGestionTarjetas)
-	fmt.Scanln(option)
-}
-
-func gestionTarjetas(client *http.Client, username string) {
+func manageCards(client *http.Client, username string) {
 	tarjetas := make(map[int]cardsData)
 
 	data := url.Values{} // estructura para contener los valores
@@ -650,7 +486,7 @@ func gestionTarjetas(client *http.Client, username string) {
 	data.Set("cmd", "Cards") // comando (string)
 	data.Set("username", username)
 
-	r, err := client.PostForm("https://localhost:8080/cards", data) // enviamos por POST
+	r, err := client.PostForm(SERVER + "/cards", data) // enviamos por POST
 	chk(err)
 
 	//--------- Con esto recojo del servidor las tarjetas y las convierto al struct
@@ -671,7 +507,7 @@ func gestionTarjetas(client *http.Client, username string) {
 	//------------------------------------------------------------------------
 
 	var option int
-	menuGestionTarjetas(&option)
+	menuMngCards(&option)
 
 	for {
 		switch option {
@@ -717,7 +553,7 @@ func gestionTarjetas(client *http.Client, username string) {
 			data.Set("username", username)
 			data.Set("cards", encode64(out))
 
-			r, err := client.PostForm("https://localhost:8080/cards", data) // enviamos por POST
+			r, err := client.PostForm(SERVER + "/cards", data) // enviamos por POST
 			chk(err)
 			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
 			fmt.Println()
@@ -779,7 +615,7 @@ func gestionTarjetas(client *http.Client, username string) {
 			data.Set("username", username)
 			data.Set("cards", encode64(out))
 
-			r, err := client.PostForm("https://localhost:8080/cards", data) // enviamos por POST
+			r, err := client.PostForm(SERVER + "/cards", data) // enviamos por POST
 			chk(err)
 			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
 			fmt.Println()
@@ -810,7 +646,7 @@ func gestionTarjetas(client *http.Client, username string) {
 			data.Set("username", username)
 			data.Set("cards", encode64(out))
 
-			r, err := client.PostForm("https://localhost:8080/cards", data) // enviamos por POST
+			r, err := client.PostForm(SERVER + "/cards", data) // enviamos por POST
 			chk(err)
 			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
 			fmt.Println()
@@ -827,21 +663,7 @@ func gestionTarjetas(client *http.Client, username string) {
 	}
 }
 
-func menuGestionNotas(option *int) {
-	menuGestionNotas :=
-		`		
-		[ 1 ] Añadir nota
-		[ 2 ] Listar notas
-		[ 3 ] Modificar nota		
-		[ 4 ] Eliminar nota
-		[ 5 ] Ir atrás
-		¿Qué prefieres?
-	`
-	fmt.Print(menuGestionNotas)
-	fmt.Scanln(option)
-}
-
-func gestionNotas(client *http.Client, username string) {
+func manageNotes(client *http.Client, username string) {
 	notas := make(map[int]notesData)
 
 	data := url.Values{} // estructura para contener los valores
@@ -849,7 +671,7 @@ func gestionNotas(client *http.Client, username string) {
 	data.Set("cmd", "Notes") // comando (string)
 	data.Set("username", username)
 
-	r, err := client.PostForm("https://localhost:8080/notes", data) // enviamos por POST
+	r, err := client.PostForm(SERVER + "/notes", data) // enviamos por POST
 	chk(err)
 
 	//--------- Con esto recojo del servidor las notas y las convierto al struct
@@ -870,7 +692,7 @@ func gestionNotas(client *http.Client, username string) {
 	//------------------------------------------------------------------------
 
 	var option int
-	menuGestionNotas(&option)
+	menuMngNotes(&option)
 
 	for {
 		switch option {
@@ -901,7 +723,7 @@ func gestionNotas(client *http.Client, username string) {
 			data.Set("username", username)
 			data.Set("notas", encode64(out))
 
-			r, err := client.PostForm("https://localhost:8080/notes", data) // enviamos por POST
+			r, err := client.PostForm(SERVER + "/notes", data) // enviamos por POST
 			chk(err)
 			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
 			fmt.Println()
@@ -949,7 +771,7 @@ func gestionNotas(client *http.Client, username string) {
 			data.Set("username", username)
 			data.Set("notas", encode64(out))
 
-			r, err := client.PostForm("https://localhost:8080/notes", data) // enviamos por POST
+			r, err := client.PostForm(SERVER + "/notes", data) // enviamos por POST
 			chk(err)
 			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
 			fmt.Println()
@@ -980,7 +802,7 @@ func gestionNotas(client *http.Client, username string) {
 			data.Set("username", username)
 			data.Set("notas", encode64(out))
 
-			r, err := client.PostForm("https://localhost:8080/notes", data) // enviamos por POST
+			r, err := client.PostForm(SERVER + "/notes", data) // enviamos por POST
 			chk(err)
 			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
 			fmt.Println()
@@ -996,28 +818,3 @@ func gestionNotas(client *http.Client, username string) {
 		}
 	}
 }
-
-/*
-func main() {
-	m := make(map[int]string)
-	fmt.Println("Values in map (after creating): ", m)
-	m[0] = "ABC"
-	m[1] = "QR"
-	m[2] = "XYZ"
-
-	fmt.Println("Length of map: ", len(m))
-	fmt.Println("Values in map(after adding values): ", m)
-
-	m[1] = "LMN"
-	fmt.Println("Values in map (after updating): ", m)
-
-	delete(m, 1)
-	fmt.Println("Values in map: ", m)
-
-	for k, v := range m {
-		fmt.Println("Key :", k, " Value :", v)
-	}
-
-	fmt.Println("Value for not existing key : ", m[3])
-}
-*/
