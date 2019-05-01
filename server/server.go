@@ -248,6 +248,7 @@ func handler(w http.ResponseWriter, req *http.Request) {
 
 	case "check":
 		response(w, 1, "Connection succsessful!")
+
 		fmt.Println("A client just connected!")
 
 	default:

@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -20,142 +21,53 @@ import (
 )
 
 //Default server address
-var SERVER_IP string = "https://localhost"
-var SERVER_PORT string = "8080"
-var SERVER string = SERVER_IP + ":" + SERVER_PORT
+var ServerIP = "https://localhost"
+var ServerPort = "8080"
+var Server string = ServerIP + ":" + ServerPort
 
 func main() {
-	if len(os.Args) == 1 || len(os.Args) == 3 {
-		if len(os.Args) == 3 {
-			SERVER_IP = os.Args[1]
-			SERVER_PORT = os.Args[2]
+	clearScreen()
 
-			fmt.Println("Trying to establish connection with \"" + SERVER + "\"")
+	if len(os.Args) == 1 || len(os.Args) == 3 {
+		var clear = false
+		var data = url.Values{} //Request structure
+
+		if len(os.Args) == 3 {
+			ServerIP = os.Args[1]
+			ServerPort = os.Args[2]
+
+			fmt.Println("Trying to establish connection with \"" + Server + "\" ...")
 		} else if len(os.Args) == 1 {
-			fmt.Println("Trying to establish local connection to default port: " + SERVER_PORT)
+			fmt.Println("Trying to establish local connection to default port: " + ServerPort + " ...")
 		}
 
-		var eleccion int     //Declarar variable y tipo antes de escanear, esto es obligatorio
-		data := url.Values{} // estructura para contener los valores
-
-		/* creamos un cliente especial que no comprueba la validez de los certificados
-		esto es necesario por que usamos certificados autofirmados (para pruebas) */
 		tr := &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		}
+
+		//Create a special client that doesn't verify the self-signed certificate
 		client := &http.Client{Transport: tr}
 
 		data.Set("cmd", "check")
 
-		r, err := client.PostForm(SERVER, data)
+		r, err := client.PostForm(Server, data)
 
 		if err == nil {
+			var response resp
+			body, _ := ioutil.ReadAll(r.Body)
+			dec := json.NewDecoder(strings.NewReader(string(body)))
+
+			dec.Decode(&response)
+			fmt.Println(response.Msg)
+
 			for {
-				io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
-				fmt.Println()
-
-				menu(&eleccion)
-
-				switch eleccion {
-				case 1:
+				if clear {
 					clearScreen()
-
-					var username string
-					var password string
-					data := url.Values{} // estructura para contener los valores
-
-					var i int
-					fmt.Println("Log in:")
-					fmt.Println("-------------------")
-
-					for i = 2; i >= 0; i-- {
-						login(&username, &password)
-
-						// hash con SHA512 de la contraseña
-						keyClient := sha512.Sum512([]byte(password))
-						keyLogin := keyClient[:32] // una mitad para el login (256 bits)
-
-						data.Set("cmd", "login")             // comando (string)
-						data.Set("user", username)           // usuario (string)
-						data.Set("pass", encode64(keyLogin)) // contraseña (a base64 porque es []byte)
-						r, err := client.PostForm(SERVER, data)
-						chk(err)
-
-						if r.StatusCode == 200 {
-							logueado(client, username)
-						} else {
-							fmt.Println("CONTRASEÑA INVÁLIDA, te quedan", i, "intentos.")
-							fmt.Println()
-						}
-						if i == 0 {
-							fmt.Println("No podrás volver a intentarlo hasta dentro de 5 minutos.")
-							time.Sleep(5 * time.Minute)
-							fmt.Println("Ya puedes volver a intentarlo.")
-							i = 3
-						}
-					}
-
-				case 2:
-					clearScreen()
-
-					var username string
-					var password string
-					var name string
-					var surname string
-					var email string
-
-					fmt.Println("Register:")
-					fmt.Println("-------------------")
-					register(&username, &password, &name, &surname, &email)
-
-					// generamos un par de claves (privada, pública) para el servidor
-					pkClient, err := rsa.GenerateKey(rand.Reader, 1024)
-					chk(err)
-					pkClient.Precompute() // aceleramos su uso con un precálculo
-
-					pkJSON, err := json.Marshal(&pkClient) // codificamos con JSON
-					chk(err)
-
-					keyPub := pkClient.Public()           // extraemos la clave pública por separado
-					pubJSON, err := json.Marshal(&keyPub) // y codificamos con JSON
-					chk(err)
-
-					// hash con SHA512 de la contraseña
-					keyClient := sha512.Sum512([]byte(password))
-					keyLogin := keyClient[:32]  // una mitad para el login (256 bits)
-					keyData := keyClient[32:64] // la otra para los datos (256 bits)
-
-					a := &userData{name, surname, email, encode64(encrypt(compress(pkJSON), keyData))}
-
-					out, err := json.Marshal(a)
-					if err != nil {
-						panic(err)
-					}
-
-					data.Set("cmd", "register")          // comando (string)
-					data.Set("user", username)           // usuario (string)
-					data.Set("pass", encode64(keyLogin)) // "contraseña" a base64
-					data.Set("userData", encode64(out))
-
-					// comprimimos y codificamos la clave pública
-					data.Set("pubkey", encode64(compress(pubJSON)))
-
-					// comprimimos, ciframos y codificamos la clave privada
-					//data.Set("prikey", encode64(encrypt(compress(pkJSON), keyData)))
-
-					r, err := client.PostForm(SERVER, data) // enviamos por POST
-					chk(err)
-					io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
-					fmt.Println()
-
-				case 3:
-					clearScreen()
-
-					fmt.Println("Goodbye!")
-					return
-				default:
-					fmt.Println("Choose an option or press [Ctrl] + [C] to exit")
+				} else {
+					clear = true
 				}
+
+				publicMenu(client)
 			}
 		} else {
 			fmt.Println("Could not establish connection with requested server")
@@ -166,35 +78,120 @@ func main() {
 	}
 }
 
-func login(username *string, password *string) {
-	fmt.Printf("Username: ")
-	fmt.Scanln(username)
-
-	fmt.Printf("Password: ")
-	fmt.Scanln(password)
-}
-
-func register(username *string, password *string, name *string, surname *string, email *string) {
-
-	fmt.Println("Insert username:")
-	fmt.Scanln(username)
-
-	fmt.Println("Insert password:")
-	fmt.Scanln(password)
-
-	fmt.Println("Insert name:")
-	fmt.Scanln(name)
-
-	fmt.Println("Insert surname:")
-	fmt.Scanln(surname)
-
-	fmt.Println("Insert email:")
-	fmt.Scanln(email)
-}
-
-func logueado(client *http.Client, username string) {
+func publicMenu(client *http.Client) {
 	var option int
-	data := url.Values{} // estructura para contener los valores
+	data := url.Values{} //Request structure
+
+	menu(&option)
+
+	switch option {
+	case 1:
+		clearScreen()
+
+		var username string
+		var password string
+
+		var tries int
+		fmt.Println("Log in:")
+		fmt.Println("-------------------")
+
+		for tries = 5; tries >= 0; tries-- {
+			login(&username, &password)
+
+			// hash con SHA512 de la contraseña
+			keyClient := sha512.Sum512([]byte(password))
+			keyLogin := keyClient[:32] // una mitad para el login (256 bits)
+
+			data.Set("cmd", "login")             // comando (string)
+			data.Set("user", username)           // usuario (string)
+			data.Set("pass", encode64(keyLogin)) // contraseña (a base64 porque es []byte)
+
+			r, err := client.PostForm(Server, data)
+			chk(err)
+
+			if r.StatusCode == 200 {
+				logged(client, username)
+			} else {
+				if tries == 1 {
+					fmt.Println("Wrong password, " + strconv.Itoa(tries) + " try left.")
+				} else {
+					fmt.Println("Wrong password, " + strconv.Itoa(tries) + " tries left.")
+				}
+				fmt.Println()
+			}
+
+			if tries == 0 {
+				fmt.Println("Please try again in 5 minutes")
+				time.Sleep(5 * time.Minute)
+
+				main()
+			}
+		}
+
+	case 2:
+		clearScreen()
+
+		var username string
+		var password string
+		var name string
+		var surname string
+		var email string
+
+		fmt.Println("Register:")
+		fmt.Println("-------------------")
+		register(&username, &password, &name, &surname, &email)
+
+		// generamos un par de claves (privada, pública) para el servidor
+		pkClient, err := rsa.GenerateKey(rand.Reader, 1024)
+		chk(err)
+		pkClient.Precompute() // aceleramos su uso con un precálculo
+
+		pkJSON, err := json.Marshal(&pkClient) // codificamos con JSON
+		chk(err)
+
+		keyPub := pkClient.Public()           // extraemos la clave pública por separado
+		pubJSON, err := json.Marshal(&keyPub) // y codificamos con JSON
+		chk(err)
+
+		// hash con SHA512 de la contraseña
+		keyClient := sha512.Sum512([]byte(password))
+		keyLogin := keyClient[:32]  // una mitad para el login (256 bits)
+		keyData := keyClient[32:64] // la otra para los datos (256 bits)
+
+		a := &userData{name, surname, email, encode64(encrypt(compress(pkJSON), keyData))}
+
+		out, err := json.Marshal(a)
+		if err != nil {
+			panic(err)
+		}
+
+		data.Set("cmd", "register")          // comando (string)
+		data.Set("user", username)           // usuario (string)
+		data.Set("pass", encode64(keyLogin)) // "contraseña" a base64
+		data.Set("userData", encode64(out))
+
+		// comprimimos y codificamos la clave pública
+		data.Set("pubkey", encode64(compress(pubJSON)))
+
+		// comprimimos, ciframos y codificamos la clave privada
+		//data.Set("prikey", encode64(encrypt(compress(pkJSON), keyData)))
+
+		r, err := client.PostForm(Server, data) // enviamos por POST
+		chk(err)
+		io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
+		fmt.Println()
+
+	case 3:
+		clearScreen()
+
+		fmt.Println("Goodbye!")
+	default:
+		fmt.Println("Choose an option or press [Ctrl] + [C] to exit")
+	}
+}
+
+func logged(client *http.Client, username string) {
+	var option int
 
 	clearScreen()
 
@@ -212,23 +209,14 @@ func logueado(client *http.Client, username string) {
 			manageNotes(client, username)
 
 		case 4:
-			data.Set("cmd", "deleteUser")  // comando (string)
-			data.Set("username", username) // usuario (string)
+			menuUserSettings(&option)
 
-			r, err := client.PostForm(SERVER, data) // enviamos por POST
-			chk(err)
-			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
-			fmt.Println()
-			return
-
-		case 5: //Share passwords
-
-			return
-
-		case 6:
+		case 5:
 			clearScreen()
+
 			fmt.Println("Logged out")
-			main()
+
+			return
 
 		default:
 			fmt.Println("Please choose a valid option")
@@ -237,13 +225,14 @@ func logueado(client *http.Client, username string) {
 }
 
 func managePasswords(client *http.Client, username string) {
-	contraseñas := make(map[int]passwordsData)
-	data := url.Values{} // estructura para contener los valores
+	passwords := make(map[int]passwordsData)
+	data := url.Values{} //Request structure
+	var option int
 
 	data.Set("cmd", "Passwords") // comando (string)
 	data.Set("username", username)
 
-	r, err := client.PostForm(SERVER + "/cards", data) // enviamos por POST
+	r, err := client.PostForm(Server+"/cards", data) // enviamos por POST
 	chk(err)
 
 	//--------- Con esto recojo del servidor las tarjetas y las convierto al struct
@@ -259,19 +248,16 @@ func managePasswords(client *http.Client, username string) {
 			log.Fatal(err)
 		}
 
-		json.Unmarshal(decode64(m.Msg), &contraseñas) // Con esto paso al map notas lo que recojo en el servidor
+		json.Unmarshal(decode64(m.Msg), &passwords) // Con esto paso al map notas lo que recojo en el servidor
 	}
 	//------------------------------------------------------------------------
 
-	var option int
 	menuMngPasswords(&option)
 
 	for {
 		switch option {
 		case 1: //addPassword
 			newPassword := passwordsData{}
-
-			data := url.Values{} // estructura para contener los valores
 
 			data.Set("cmd", "modifyPasswords") // comando (string)
 
@@ -329,9 +315,9 @@ func managePasswords(client *http.Client, username string) {
 			newPassword.Site = url
 			newPassword.Modified = time.Now().String()
 
-			contraseñas[len(contraseñas)+1] = newPassword
+			passwords[len(passwords)+1] = newPassword
 
-			out, err := json.Marshal(contraseñas)
+			out, err := json.Marshal(passwords)
 			if err != nil {
 				panic(err)
 			}
@@ -339,7 +325,7 @@ func managePasswords(client *http.Client, username string) {
 			data.Set("username", username)
 			data.Set("passwords", encode64(out))
 
-			r, err := client.PostForm(SERVER + "/passwords", data) // enviamos por POST
+			r, err := client.PostForm(Server+"/passwords", data) // enviamos por POST
 			chk(err)
 			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
 			fmt.Println()
@@ -347,7 +333,7 @@ func managePasswords(client *http.Client, username string) {
 			return
 
 		case 2: //List password
-			for k, v := range contraseñas {
+			for k, v := range passwords {
 				fmt.Println(k, "-. URL: ", v.Site, ", de: ", v.Username)
 			}
 
@@ -355,9 +341,8 @@ func managePasswords(client *http.Client, username string) {
 
 		case 3: //Modify password
 			modifyPasswords := passwordsData{}
-			data := url.Values{} // estructura para contener los valores
 
-			for k, v := range contraseñas {
+			for k, v := range passwords {
 				fmt.Println(k, "-. URL: ", v.Site, ", de: ", v.Username)
 			}
 
@@ -421,8 +406,8 @@ func managePasswords(client *http.Client, username string) {
 			modifyPasswords.Site = url
 			modifyPasswords.Modified = time.Now().String()
 
-			contraseñas[index] = modifyPasswords
-			out, err := json.Marshal(contraseñas)
+			passwords[index] = modifyPasswords
+			out, err := json.Marshal(passwords)
 			if err != nil {
 				panic(err)
 			}
@@ -430,16 +415,14 @@ func managePasswords(client *http.Client, username string) {
 			data.Set("username", username)
 			data.Set("passwords", encode64(out))
 
-			r, err := client.PostForm(SERVER + "/passwords", data) // enviamos por POST
+			r, err := client.PostForm(Server+"/passwords", data) // enviamos por POST
 			chk(err)
 			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
 			fmt.Println()
 			return
 
 		case 4: //Delete password
-			data := url.Values{} // estructura para contener los valores
-
-			for k, v := range contraseñas {
+			for k, v := range passwords {
 				fmt.Println(k, "-. URL: ", v.Site, ", de: ", v.Username)
 			}
 
@@ -449,11 +432,11 @@ func managePasswords(client *http.Client, username string) {
 			var index int
 			fmt.Scanf("%d", &index)
 
-			delete(contraseñas, index)
+			delete(passwords, index)
 
 			// KIRIL, AQUI HABRIA QUE HACER ALGO PARA QUE SE VUELVAN A COLOCAR LOS INDEX DEL MAP (YA QUE AL BORRAR SE QUEDA UNO SUELTO)
 
-			out, err := json.Marshal(contraseñas)
+			out, err := json.Marshal(passwords)
 			if err != nil {
 				panic(err)
 			}
@@ -461,7 +444,7 @@ func managePasswords(client *http.Client, username string) {
 			data.Set("username", username)
 			data.Set("passwords", encode64(out))
 
-			r, err := client.PostForm(SERVER + "/passwords", data) // enviamos por POST
+			r, err := client.PostForm(Server+"/passwords", data) // enviamos por POST
 			chk(err)
 			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
 			fmt.Println()
@@ -486,7 +469,7 @@ func manageCards(client *http.Client, username string) {
 	data.Set("cmd", "Cards") // comando (string)
 	data.Set("username", username)
 
-	r, err := client.PostForm(SERVER + "/cards", data) // enviamos por POST
+	r, err := client.PostForm(Server+"/cards", data) // enviamos por POST
 	chk(err)
 
 	//--------- Con esto recojo del servidor las tarjetas y las convierto al struct
@@ -553,7 +536,7 @@ func manageCards(client *http.Client, username string) {
 			data.Set("username", username)
 			data.Set("cards", encode64(out))
 
-			r, err := client.PostForm(SERVER + "/cards", data) // enviamos por POST
+			r, err := client.PostForm(Server+"/cards", data) // enviamos por POST
 			chk(err)
 			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
 			fmt.Println()
@@ -615,7 +598,7 @@ func manageCards(client *http.Client, username string) {
 			data.Set("username", username)
 			data.Set("cards", encode64(out))
 
-			r, err := client.PostForm(SERVER + "/cards", data) // enviamos por POST
+			r, err := client.PostForm(Server+"/cards", data) // enviamos por POST
 			chk(err)
 			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
 			fmt.Println()
@@ -646,7 +629,7 @@ func manageCards(client *http.Client, username string) {
 			data.Set("username", username)
 			data.Set("cards", encode64(out))
 
-			r, err := client.PostForm(SERVER + "/cards", data) // enviamos por POST
+			r, err := client.PostForm(Server+"/cards", data) // enviamos por POST
 			chk(err)
 			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
 			fmt.Println()
@@ -671,7 +654,7 @@ func manageNotes(client *http.Client, username string) {
 	data.Set("cmd", "Notes") // comando (string)
 	data.Set("username", username)
 
-	r, err := client.PostForm(SERVER + "/notes", data) // enviamos por POST
+	r, err := client.PostForm(Server+"/notes", data) // enviamos por POST
 	chk(err)
 
 	//--------- Con esto recojo del servidor las notas y las convierto al struct
@@ -723,7 +706,7 @@ func manageNotes(client *http.Client, username string) {
 			data.Set("username", username)
 			data.Set("notas", encode64(out))
 
-			r, err := client.PostForm(SERVER + "/notes", data) // enviamos por POST
+			r, err := client.PostForm(Server+"/notes", data) // enviamos por POST
 			chk(err)
 			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
 			fmt.Println()
@@ -771,7 +754,7 @@ func manageNotes(client *http.Client, username string) {
 			data.Set("username", username)
 			data.Set("notas", encode64(out))
 
-			r, err := client.PostForm(SERVER + "/notes", data) // enviamos por POST
+			r, err := client.PostForm(Server+"/notes", data) // enviamos por POST
 			chk(err)
 			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
 			fmt.Println()
@@ -802,7 +785,7 @@ func manageNotes(client *http.Client, username string) {
 			data.Set("username", username)
 			data.Set("notas", encode64(out))
 
-			r, err := client.PostForm(SERVER + "/notes", data) // enviamos por POST
+			r, err := client.PostForm(Server+"/notes", data) // enviamos por POST
 			chk(err)
 			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
 			fmt.Println()
@@ -813,8 +796,39 @@ func manageNotes(client *http.Client, username string) {
 			return
 
 		default:
-			fmt.Println("No has seleccionado una opcion correcta.")
+			fmt.Println("No has soptionado una opcion correcta.")
 
 		}
+	}
+}
+
+func userSettings(client *http.Client, username string) {
+	var option int
+
+	data := url.Values{} //Request structure
+
+	menuUserSettings(&option)
+
+	switch option {
+	case 1:
+
+	case 2:
+
+	case 3:
+
+	case 4:
+
+	case 5:
+		data.Set("cmd", "deleteUser")  // comando (string)
+		data.Set("username", username) // usuario (string)
+
+		r, err := client.PostForm(Server, data) // enviamos por POST
+		chk(err)
+		io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
+		fmt.Println()
+		return
+
+	case 6:
+		return
 	}
 }
