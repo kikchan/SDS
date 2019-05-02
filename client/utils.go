@@ -7,10 +7,14 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"encoding/base64"
+	"fmt"
 	"log"
 	"net"
 	"os"
 	"os/exec"
+	"time"
+
+	. "github.com/logrusorgru/aurora"
 )
 
 //Error checking function
@@ -18,6 +22,12 @@ func chk(e error) {
 	if e != nil {
 		panic(e)
 	}
+}
+
+//Invalid option message
+func InvalidChoice() {
+	fmt.Println(Red("Please choose a valid option"))
+	time.Sleep(2 * time.Second)
 }
 
 //A screen cleaner. Only works on Unix based systems

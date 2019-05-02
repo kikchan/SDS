@@ -16,6 +16,8 @@ import (
 )
 
 func managePasswords(client *http.Client, username string) {
+	clearScreen()
+
 	passwords := make(map[int]passwordsData)
 	data := url.Values{} //Request structure
 	var option int
@@ -243,16 +245,19 @@ func managePasswords(client *http.Client, username string) {
 			return
 
 		case 5:
-			return
+			logged(client, username)
 
 		default:
-			fmt.Println("No has soptionado una opcion correcta.")
+			InvalidChoice()
+			managePasswords(client, username)
 
 		}
 	}
 }
 
 func manageCards(client *http.Client, username string) {
+	clearScreen()
+
 	tarjetas := make(map[int]cardsData)
 
 	data := url.Values{} // estructura para contener los valores
@@ -428,16 +433,19 @@ func manageCards(client *http.Client, username string) {
 			return
 
 		case 5:
-			return
+			logged(client, username)
 
 		default:
-			fmt.Println("No has soptionado una opcion correcta.")
+			InvalidChoice()
+			manageCards(client, username)
 
 		}
 	}
 }
 
 func manageNotes(client *http.Client, username string) {
+	clearScreen()
+
 	notas := make(map[int]notesData)
 
 	data := url.Values{} // estructura para contener los valores
@@ -584,16 +592,19 @@ func manageNotes(client *http.Client, username string) {
 			return
 
 		case 5:
-			return
+			logged(client, username)
 
 		default:
-			fmt.Println("No has soptionado una opcion correcta.")
+			InvalidChoice()
+			manageNotes(client, username)
 
 		}
 	}
 }
 
 func userSettings(client *http.Client, username string) {
+	clearScreen()
+
 	var option int
 
 	data := url.Values{} //Request structure
@@ -621,5 +632,9 @@ func userSettings(client *http.Client, username string) {
 
 	case 6: //Go back
 		logged(client, username)
+
+	default:
+		InvalidChoice()
+		userSettings(client, username)
 	}
 }

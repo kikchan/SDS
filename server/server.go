@@ -62,19 +62,23 @@ func decode64(s string) []byte {
 
 // respuesta del servidor
 type resp struct {
-	Code int    // true -> correcto, false -> error
+	Code bool   // true -> correcto, false -> error
 	Msg  string // mensaje adicional
 }
 
 // función para escribir una respuesta del servidor
 func response(w http.ResponseWriter, code int, msg string) {
+	var codeFormatted = true
+
 	if code != 1 {
 		w.WriteHeader(400)
+		codeFormatted = false
 	}
-	r := resp{Code: code, Msg: msg} // formateamos respuesta
-	rJSON, err := json.Marshal(&r)  // codificamos en JSON
-	chk(err)                        // comprobamos error
-	w.Write(rJSON)                  // escribimos el JSON resultante
+
+	r := resp{Code: codeFormatted, Msg: msg} // formateamos respuesta
+	rJSON, err := json.Marshal(&r)           // codificamos en JSON
+	chk(err)                                 // comprobamos error
+	w.Write(rJSON)                           // escribimos el JSON resultante
 }
 
 // función para escribir una respuesta del servidor

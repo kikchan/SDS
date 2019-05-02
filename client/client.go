@@ -15,12 +15,14 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	. "github.com/logrusorgru/aurora"
 )
 
 //Default server address
 var ServerIP = "https://localhost"
 var ServerPort = "8080"
-var Server string = ServerIP + ":" + ServerPort
+var Server = ServerIP + ":" + ServerPort
 
 func main() {
 	clearScreen()
@@ -50,26 +52,27 @@ func main() {
 
 		r, err := client.PostForm(Server, data)
 
-		if err == nil {
+		if err == nil && r.StatusCode == 200 {
 			var response resp
-			var exit = false
 			body, _ := ioutil.ReadAll(r.Body)
 			dec := json.NewDecoder(strings.NewReader(string(body)))
 
 			dec.Decode(&response)
-			fmt.Println(response.Msg)
+			fmt.Println(Green(response.Msg))
 
-			for !exit {
+			time.Sleep(1 * time.Second) //Wait 2 seconds so the user can read the message
+
+			for {
 				if clear {
 					clearScreen()
 				} else {
 					clear = true
 				}
 
-				exit = publicMenu(client)
+				publicMenu(client)
 			}
 		} else {
-			fmt.Println("Could not establish connection with requested server")
+			fmt.Println(Red("Could not establish connection with requested server"))
 		}
 	} else {
 		fmt.Println("Bad arguments. The correct sintax is: [programName] [server] [port]")
@@ -77,7 +80,9 @@ func main() {
 	}
 }
 
-func publicMenu(client *http.Client) bool {
+func publicMenu(client *http.Client) {
+	clearScreen()
+
 	var option int
 	data := url.Values{} //Request structure
 
@@ -85,8 +90,6 @@ func publicMenu(client *http.Client) bool {
 
 	switch option {
 	case 1:
-		clearScreen()
-
 		var username string
 		var password string
 
@@ -128,8 +131,6 @@ func publicMenu(client *http.Client) bool {
 		}
 
 	case 2:
-		clearScreen()
-
 		var username string
 		var password string
 		var name string
@@ -181,16 +182,13 @@ func publicMenu(client *http.Client) bool {
 		fmt.Println()
 
 	case 3:
-		clearScreen()
-
 		fmt.Println("Goodbye!")
-		return true
+		os.Exit(0)
 
 	default:
-		fmt.Println("Choose an option or press [Ctrl] + [C] to exit")
+		InvalidChoice()
+		publicMenu(client)
 	}
-
-	return false
 }
 
 func logged(client *http.Client, username string) {
@@ -203,15 +201,19 @@ func logged(client *http.Client, username string) {
 	for {
 		switch option {
 		case 1:
+			clearScreen()
 			managePasswords(client, username)
 
 		case 2:
+			clearScreen()
 			manageCards(client, username)
 
 		case 3:
+			clearScreen()
 			manageNotes(client, username)
 
 		case 4:
+			clearScreen()
 			userSettings(client, username)
 
 		case 5:
