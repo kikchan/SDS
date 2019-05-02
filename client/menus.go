@@ -7,8 +7,7 @@ import (
 )
 
 func menu(option *int) {
-	fmt.Println(Red("\tMasterPass"))
-	fmt.Println(Green("----------------------\n"))
+	coloredMenu("MasterPASS")
 
 	menu :=
 		"[ 1 ] Login\n" +
@@ -21,9 +20,8 @@ func menu(option *int) {
 }
 
 func menuLogged(option *int, username string) {
+	coloredMenu("Main menu")
 	fmt.Println(fmt.Sprintf("Welcome %s.\n", Bold(Cyan(username))))
-	fmt.Println(Bold(Red("\tMain menu")))
-	fmt.Println(Green("----------------------\n"))
 
 	menuLogged :=
 		"[ 1 ] Manage passwords\n" +
@@ -38,8 +36,7 @@ func menuLogged(option *int, username string) {
 }
 
 func menuMngPasswords(option *int) {
-	fmt.Println(Bold(Red("\tManage passwords")))
-	fmt.Println(Green("----------------------\n"))
+	coloredMenu("Passwords menu")
 
 	menuMngPasswords :=
 		"[ 1 ] Add a password\n" +
@@ -54,8 +51,7 @@ func menuMngPasswords(option *int) {
 }
 
 func menuMngCards(option *int) {
-	fmt.Println(Bold(Red("\tManage cards")))
-	fmt.Println(Green("----------------------\n"))
+	coloredMenu("Cards menu")
 
 	menuMngCards :=
 		"[ 1 ] Add a card\n" +
@@ -70,8 +66,7 @@ func menuMngCards(option *int) {
 }
 
 func menuMngNotes(option *int) {
-	fmt.Println(Bold(Red("\tManage notes")))
-	fmt.Println(Green("----------------------\n"))
+	coloredMenu("Notes menu")
 
 	menuMngNotes :=
 		"[ 1 ] Add a note\n" +
@@ -86,8 +81,7 @@ func menuMngNotes(option *int) {
 }
 
 func menuUserSettings(option *int) {
-	fmt.Println(Bold(Red("User settings")))
-	fmt.Println(Green("----------------------\n"))
+	coloredMenu("User settings menu")
 
 	menuUserSettings :=
 		"[ 1 ] View user data\n" +

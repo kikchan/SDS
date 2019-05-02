@@ -94,9 +94,6 @@ func publicMenu(client *http.Client) {
 		var password string
 
 		var tries int
-		fmt.Println("Log in:")
-		fmt.Println("-------------------")
-
 		for tries = 5; tries >= 0; tries-- {
 			login(&username, &password)
 
@@ -137,8 +134,6 @@ func publicMenu(client *http.Client) {
 		var surname string
 		var email string
 
-		fmt.Println("Register:")
-		fmt.Println("-------------------")
 		register(&username, &password, &name, &surname, &email)
 
 		// generamos un par de claves (privada, pública) para el servidor
@@ -223,7 +218,8 @@ func logged(client *http.Client, username string) {
 			return
 
 		default:
-			fmt.Println("Please choose a valid option")
+			InvalidChoice()
+			logged(client, username)
 		}
 	}
 }

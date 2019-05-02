@@ -79,3 +79,10 @@ func GetAddress() string {
 
 	return conn.LocalAddr().String()
 }
+
+//Prints a colored menu
+func coloredMenu(title string) {
+	fmt.Println(Green("--------------------------"))
+	fmt.Println(Green("|"), Red("\t"+title+"\t"), Green("|"))
+	fmt.Println(Green("--------------------------\n"))
+}
