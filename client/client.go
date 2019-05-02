@@ -29,17 +29,21 @@ func main() {
 
 	if len(os.Args) == 1 || len(os.Args) == 3 {
 		var clear = false
-		var data = url.Values{} //Request structure
+
+		//Request structure
+		var data = url.Values{}
 
 		if len(os.Args) == 3 {
-			ServerIP = os.Args[1]
+			ServerIP = "https://" + os.Args[1]
 			ServerPort = os.Args[2]
+			Server = ServerIP + ":" + ServerPort
 
 			fmt.Println("Trying to establish connection with \"" + Server + "\" ...")
 		} else if len(os.Args) == 1 {
-			fmt.Println("Trying to establish local connection to default port: " + ServerPort + " ...")
+			fmt.Println("Trying to establish local connection to default address: " + Server + " ...")
 		}
 
+		//Open an HTTP connection using TLS
 		tr := &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		}
@@ -47,28 +51,36 @@ func main() {
 		//Create a special client that doesn't verify the self-signed certificate
 		client := &http.Client{Transport: tr}
 
-		data.Set("cmd", "check")
+		data.Set("cmd", "open")
 		data.Set("address", GetAddress())
 
 		r, err := client.PostForm(Server, data)
 
 		if err == nil && r.StatusCode == 200 {
 			var response resp
+
+			//Read the body from the response
 			body, _ := ioutil.ReadAll(r.Body)
+
+			//Creates a new JSON decoder
 			dec := json.NewDecoder(strings.NewReader(string(body)))
 
+			//Convert the body to a json structure
 			dec.Decode(&response)
 			fmt.Println(Green(response.Msg))
 
-			time.Sleep(1 * time.Second) //Wait 2 seconds so the user can read the message
+			//Wait 2 seconds so the user can read the message
+			time.Sleep(1 * time.Second)
 
 			for {
+				//Clear the screen only the first time the program is executed
 				if clear {
 					clearScreen()
 				} else {
 					clear = true
 				}
 
+				//Show the public main menu
 				publicMenu(client)
 			}
 		} else {
@@ -76,15 +88,16 @@ func main() {
 		}
 	} else {
 		fmt.Println("Bad arguments. The correct sintax is: [programName] [server] [port]")
-		fmt.Println("An example: \"go run *.go https://localhost 8080\"")
+		fmt.Println("An example: \"go run *.go 127.0.0.1 8080\"")
 	}
 }
 
 func publicMenu(client *http.Client) {
 	clearScreen()
 
+	//Request structure
+	var data = url.Values{}
 	var option int
-	data := url.Values{} //Request structure
 
 	menu(&option)
 
@@ -97,17 +110,26 @@ func publicMenu(client *http.Client) {
 		for tries = 5; tries >= 0; tries-- {
 			login(&username, &password)
 
-			// hash con SHA512 de la contraseña
+			//Hash the password with SHA512
 			keyClient := sha512.Sum512([]byte(password))
-			keyLogin := keyClient[:32] // una mitad para el login (256 bits)
 
-			data.Set("cmd", "login")             // comando (string)
-			data.Set("user", username)           // usuario (string)
-			data.Set("pass", encode64(keyLogin)) // contraseña (a base64 porque es []byte)
+			//Half of the password is used for the login (256 bits)
+			keyLogin := keyClient[:32]
 
+			//Set the "login" command
+			data.Set("cmd", "login")
+
+			//Set the username
+			data.Set("user", username)
+
+			//Set the user password (encoded)
+			data.Set("pass", encode64(keyLogin))
+
+			//Send the request to the server and get a response
 			r, err := client.PostForm(Server, data)
 			chk(err)
 
+			//If connection is succsessfull, show the logged menu, otherwise, print a message
 			if r.StatusCode == 200 {
 				logged(client, username)
 			} else {
@@ -119,6 +141,7 @@ func publicMenu(client *http.Client) {
 				fmt.Println()
 			}
 
+			//If there are no more tries left, make the user wait for 5 minutes
 			if tries == 0 {
 				fmt.Println("Please try again in 5 minutes")
 				time.Sleep(5 * time.Minute)
@@ -136,47 +159,76 @@ func publicMenu(client *http.Client) {
 
 		register(&username, &password, &name, &surname, &email)
 
-		// generamos un par de claves (privada, pública) para el servidor
+		//Generate a pair of both private and public keys
 		pkClient, err := rsa.GenerateKey(rand.Reader, 1024)
 		chk(err)
-		pkClient.Precompute() // aceleramos su uso con un precálculo
 
-		pkJSON, err := json.Marshal(&pkClient) // codificamos con JSON
+		//Accelerate its the time required for computing it
+		pkClient.Precompute()
+
+		//Parse the keys to a JSON structure
+		pkJSON, err := json.Marshal(&pkClient)
 		chk(err)
 
-		keyPub := pkClient.Public()           // extraemos la clave pública por separado
+		//Extract the public key
+		keyPub := pkClient.Public()
+
+		//Parse it to JSON
 		pubJSON, err := json.Marshal(&keyPub) // y codificamos con JSON
 		chk(err)
 
-		// hash con SHA512 de la contraseña
+		//Hash the password with SHA512
 		keyClient := sha512.Sum512([]byte(password))
-		keyLogin := keyClient[:32]  // una mitad para el login (256 bits)
-		keyData := keyClient[32:64] // la otra para los datos (256 bits)
 
+		//Half of the password is used for the login (256 bits)
+		keyLogin := keyClient[:32]
+
+		//The other half of the password is used for the data (256 bits)
+		keyData := keyClient[32:64]
+
+		//Create a user structure
 		a := &userData{name, surname, email, encode64(encrypt(compress(pkJSON), keyData))}
 
+		//Parse the user structure to JSON
 		out, err := json.Marshal(a)
 		if err != nil {
 			panic(err)
 		}
 
-		data.Set("cmd", "register")          // comando (string)
-		data.Set("user", username)           // usuario (string)
-		data.Set("pass", encode64(keyLogin)) // "contraseña" a base64
+		//Set the "register" command
+		data.Set("cmd", "register")
+
+		//Set the username
+		data.Set("user", username)
+
+		//Set the user password
+		data.Set("pass", encode64(keyLogin))
+
+		//Set the user data
 		data.Set("userData", encode64(out))
 
-		// comprimimos y codificamos la clave pública
+		//Set the compressed and encoded public key
 		data.Set("pubkey", encode64(compress(pubJSON)))
 
-		// comprimimos, ciframos y codificamos la clave privada
-		//data.Set("prikey", encode64(encrypt(compress(pkJSON), keyData)))
-
-		r, err := client.PostForm(Server, data) // enviamos por POST
+		//Send the request to the server
+		r, err := client.PostForm(Server, data)
 		chk(err)
-		io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
+
+		//Print the response's body
+		io.Copy(os.Stdout, r.Body)
 		fmt.Println()
 
 	case 3:
+		//Set the "close" command
+		data.Set("cmd", "close")
+
+		//Set the current client's IP
+		data.Set("address", GetAddress())
+
+		//Notify the server of the connection close
+		client.PostForm(Server, data)
+
+		//Exit the program
 		fmt.Println("Goodbye!")
 		os.Exit(0)
 
@@ -197,25 +249,33 @@ func logged(client *http.Client, username string) {
 		switch option {
 		case 1:
 			clearScreen()
+
+			//Call the password manager function
 			managePasswords(client, username)
 
 		case 2:
 			clearScreen()
+
+			//Call the card manager function
 			manageCards(client, username)
 
 		case 3:
 			clearScreen()
+
+			//Call the note manager function
 			manageNotes(client, username)
 
 		case 4:
 			clearScreen()
+
+			//Call the user settings function
 			userSettings(client, username)
 
 		case 5:
 			clearScreen()
-			publicMenu(client)
 
-			return
+			//Go back to previous menu
+			publicMenu(client)
 
 		default:
 			InvalidChoice()

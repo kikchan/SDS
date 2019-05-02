@@ -3,124 +3,63 @@ package main
 import (
 	"bytes"
 	"crypto/rand"
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
 
 	_ "github.com/go-sql-driver/mysql"
+	. "github.com/logrusorgru/aurora"
 	"golang.org/x/crypto/scrypt"
 )
 
 //Database connection variables
-var DB_IP string = "185.207.145.237"
-var DB_Port string = "3306"
-var DB_Protocol string = "tcp"
-var DB_Name string = "sds2"
-var DB_Username string = "sdsAppClient"
-var DB_Password string = "qwerty123456"
+var DB_IP = "185.207.145.237"
+var DB_Port = "3306"
+var DB_Protocol = "tcp"
+var DB_Name = "sds2"
+var DB_Username = "sdsAppClient"
+var DB_Password = "qwerty123456"
 
-//Error check function
-func chk(e error) {
-	if e != nil {
-		panic(e)
-	}
-}
-
-type user struct {
-	ID       int
-	Username string
-	Password string
-	PubKey   string
-	Hash     []byte // hash de la contraseña
-	Salt     []byte // sal para la contraseña
-	Data     string
-}
-
-type notesData struct {
-	Date string
-	Text string
-}
-
-type field struct {
-	Data    string
-	UserKey string
-}
-
-// función para codificar de []bytes a string (Base64)
-func encode64(data []byte) string {
-	return base64.StdEncoding.EncodeToString(data) // sólo utiliza caracteres "imprimibles"
-}
-
-// función para decodificar de string a []bytes (Base64)
-func decode64(s string) []byte {
-	b, err := base64.StdEncoding.DecodeString(s) // recupera el formato original
-	chk(err)                                     // comprobamos el error
-	return b                                     // devolvemos los datos originales
-}
-
-// respuesta del servidor
-type resp struct {
-	Code bool   // true -> correcto, false -> error
-	Msg  string // mensaje adicional
-}
-
-// función para escribir una respuesta del servidor
-func response(w http.ResponseWriter, code int, msg string) {
-	var codeFormatted = true
-
-	if code != 1 {
-		w.WriteHeader(400)
-		codeFormatted = false
-	}
-
-	r := resp{Code: codeFormatted, Msg: msg} // formateamos respuesta
-	rJSON, err := json.Marshal(&r)           // codificamos en JSON
-	chk(err)                                 // comprobamos error
-	w.Write(rJSON)                           // escribimos el JSON resultante
-}
-
-// función para escribir una respuesta del servidor
-func response2(w http.ResponseWriter, msg string) {
-	r := resp{Msg: msg}            // formateamos respuesta
-	rJSON, err := json.Marshal(&r) // codificamos en JSON
-	chk(err)                       // comprobamos error
-	w.Write(rJSON)                 // escribimos el JSON resultante
-}
+//Default parameters
+var Port = "8080"
 
 func main() {
-	var port = "8080"
-
 	if len(os.Args) == 2 {
-		port = os.Args[1]
-		fmt.Println("Awaiting connections through port: " + port)
+		Port = os.Args[1]
+		fmt.Println("Awaiting connections through port:", Cyan(Port))
 	} else {
-		fmt.Println("Awaiting connections through default port " + port)
+		fmt.Println("Awaiting connections through", Magenta("default"), "port:", Yellow(Port))
 	}
 
-	http.HandleFunc("/", handler) // asignamos un handler global
+	//Asign a global handler to "/" route
+	http.HandleFunc("/", handler)
 
-	// escuchamos el puerto 8080 con https y comprobamos el error
-	// Para generar certificados autofirmados con openssl usar:
-	//    openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes -subj "/C=ES/ST=Alicante/L=Alicante/O=UA/OU=Org/CN=www.ua.com"
-	chk(http.ListenAndServeTLS(":"+port, "cert.pem", "key.pem", nil))
+	//Set the server to await connections from the selected port
+	chk(http.ListenAndServeTLS(":"+Port, "cert.pem", "key.pem", nil))
 }
 
 func handler(w http.ResponseWriter, req *http.Request) {
-	req.ParseForm()                              // es necesario parsear el formulario
-	w.Header().Set("Content-Type", "text/plain") // cabecera estándar
+	//The request must be always parsed
+	req.ParseForm()
 
-	switch req.Form.Get("cmd") { // comprobamos comando desde el cliente
-	case "login": // ** login
+	//Set the header to "text/plain"
+	w.Header().Set("Content-Type", "text/plain")
+
+	//Switch between the commands received from the client
+	switch req.Form.Get("cmd") {
+	case "login":
+		//Find the user
 		code, msg, user := findUser(req.Form.Get("user"))
 
 		if code == 1 {
-			password := decode64(req.Form.Get("pass")) // obtenemos la contraseña
+			//Find its passwords
+			password := decode64(req.Form.Get("pass"))
 
-			hash, _ := scrypt.Key(password, user.Salt, 16384, 8, 1, 32) // scrypt(contraseña)
+			//Calculate the hash given its password
+			hash, _ := scrypt.Key(password, user.Salt, 16384, 8, 1, 32)
 
-			if bytes.Compare(user.Hash, hash) == 0 { // comparamos
+			//Compare the calculated hash and the stored one
+			if bytes.Compare(user.Hash, hash) == 0 {
 				response(w, 1, "Logged in")
 			} else {
 				response(w, 0, "Wrong credentials")
@@ -131,21 +70,29 @@ func handler(w http.ResponseWriter, req *http.Request) {
 
 		return
 
-	case "register": // ** registro
+	case "register":
+		//Find the user
 		code, msg, _ := findUser(req.Form.Get("user"))
+
 		if code == -3 {
+			//Get user data
 			u := user{}
-			u.Username = req.Form.Get("user") // username
+			u.Username = req.Form.Get("user")
 			u.Data = req.Form.Get("userData")
 			u.Password = req.Form.Get("pass")
 			u.PubKey = req.Form.Get("pubkey")
-			u.Salt = make([]byte, 16)                  // sal (16 bytes == 128 bits)
-			rand.Read(u.Salt)                          // la sal es aleatoria
-			password := decode64(req.Form.Get("pass")) // contraseña (keyLogin)
 
-			// "hasheamos" la contraseña con scrypt
+			//Make a 128 bits Salt
+			u.Salt = make([]byte, 16)
+			rand.Read(u.Salt)
+
+			//Decode the user password
+			password := decode64(req.Form.Get("pass"))
+
+			//Calculate the hash given the user's password
 			u.Hash, _ = scrypt.Key(password, u.Salt, 16384, 8, 1, 32)
 
+			//Save the new user to the database with his public key, data, salt and hash
 			code, msg = createUser(u.Username, u.Password, u.PubKey, encode64(u.Hash), encode64(u.Salt), u.Data)
 
 			response(w, code, msg)
@@ -154,9 +101,11 @@ func handler(w http.ResponseWriter, req *http.Request) {
 		}
 
 	case "deleteUser":
+		//Find the user
 		code, msg, username := findUser(req.Form.Get("username"))
 
 		if code == 1 {
+			//Try to delete the user
 			code, msg := deleteUser(username.Username)
 
 			response(w, code, msg)
@@ -166,94 +115,75 @@ func handler(w http.ResponseWriter, req *http.Request) {
 
 		return
 
-	case "Passwords":
+	case "getUserPasswords":
+		//Query the database to retrieve the user's passwords
+		code, msg := getUserPasswords(req.Form.Get("username"))
 
-		code, jsonPasswords := getUserPasswords(req.Form.Get("username"))
-
-		if code == 1 {
-			response2(w, jsonPasswords)
-		} else {
-			fmt.Println("Error al coger las contraseñas")
-			response2(w, "Error")
-		}
+		response(w, code, msg)
 
 		return
 
 	case "modifyPasswords":
-
+		//Store in a variable the username and passwords to modify
 		username := req.Form.Get("username")
 		passwords := req.Form.Get("passwords")
 
-		code, _ := updatePassword(username, passwords)
+		//Query the database to update the passwords
+		code, msg := updatePassword(username, passwords)
 
-		if code == 1 {
-			fmt.Println("Se han modificado contraseñas correctamente.")
-		} else {
-			fmt.Println("Error modificando contraseñas.")
-		}
+		response(w, code, msg)
 
 		return
 
-	case "Cards":
+	case "getUserCards":
+		//Query the database to retrieve the user's cards
+		code, msg := getUserCards(req.Form.Get("username"))
 
-		code, jsonCards := getUserCards(req.Form.Get("username"))
-
-		if code == 1 {
-			response2(w, jsonCards)
-		} else {
-			fmt.Println("Error al coger las tarjetas")
-			response2(w, "Error")
-		}
+		response(w, code, msg)
 
 		return
 
 	case "modifyCards":
-
+		//Store in a variable the username and cards to modify
 		username := req.Form.Get("username")
 		cards := req.Form.Get("cards")
 
-		code, _ := updateCard(username, cards)
+		//Query the database to update the cards
+		code, msg := updateCard(username, cards)
 
-		if code == 1 {
-			fmt.Println("Se han modificado tarjetas correctamente.")
-		} else {
-			fmt.Println("Error modificando tarjetas.")
-		}
+		response(w, code, msg)
 
 		return
 
-	case "Notes":
+	case "getUserNotes":
+		//Query the database to retreive the user's notes
+		code, msg := getUserNotes(req.Form.Get("username"))
 
-		code, jsonNotas := getUserNotes(req.Form.Get("username"))
-
-		if code == 1 {
-			response2(w, jsonNotas)
-		} else {
-			fmt.Println("Error al coger las notas")
-			response2(w, "Error")
-		}
+		response(w, code, msg)
 
 		return
 
 	case "modifyNotes":
-
+		//Store in a variable the username and notes to modify
 		username := req.Form.Get("username")
 		notas := req.Form.Get("notas")
 
-		code, _ := updateNote(username, notas)
+		//Query the database to update the notes
+		code, msg := updateNote(username, notas)
 
-		if code == 1 {
-			fmt.Println("Se han modificado notas correctamente.")
-		} else {
-			fmt.Println("Error modificando notas.")
-		}
+		response(w, code, msg)
 
 		return
 
-	case "check":
+	case "open":
 		response(w, 1, "Connection established!")
 
-		fmt.Println("A client just connected from IP: " + req.Form.Get("address") + "!")
+		consoleTimeStamp()
+		fmt.Println(Yellow(req.Form.Get("address")), Green("opened"), BrightBlue("a new connection"))
+
+	case "close":
+		consoleTimeStamp()
+		fmt.Println(Yellow(req.Form.Get("address")), Red("closed"), BrightBlue("the existing connection"))
 
 	default:
 		response(w, 0, "Please choose a valid option")

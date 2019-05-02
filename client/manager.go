@@ -19,29 +19,39 @@ func managePasswords(client *http.Client, username string) {
 	clearScreen()
 
 	passwords := make(map[int]passwordsData)
-	data := url.Values{} //Request structure
+
+	//Request structure
+	data := url.Values{}
 	var option int
 
-	data.Set("cmd", "Passwords") // comando (string)
+	//Set the "getUserPasswords" command
+	data.Set("cmd", "getUserPasswords")
+
+	//Set the username
 	data.Set("username", username)
 
-	r, err := client.PostForm(Server+"/cards", data) // enviamos por POST
+	//Send the request to the server
+	r, err := client.PostForm(Server+"/cards", data)
 	chk(err)
 
-	//--------- Con esto recojo del servidor las tarjetas y las convierto al struct
+	//Retrieve the response's body
 	body, err := ioutil.ReadAll(r.Body)
 
+	//Create a new JSON decoder
 	dec := json.NewDecoder(strings.NewReader(string(body)))
 
 	for {
 		var m resp
+
+		//Decode the server's response
 		if err := dec.Decode(&m); err == io.EOF {
 			break
 		} else if err != nil {
 			log.Fatal(err)
 		}
 
-		json.Unmarshal(decode64(m.Msg), &passwords) // Con esto paso al map notas lo que recojo en el servidor
+		//Convert the response to a structure of passwords
+		json.Unmarshal(decode64(m.Msg), &passwords)
 	}
 	//------------------------------------------------------------------------
 
@@ -49,64 +59,10 @@ func managePasswords(client *http.Client, username string) {
 
 	for {
 		switch option {
-		case 1: //addPassword
-			newPassword := passwordsData{}
+		case 1:
+			data.Set("cmd", "modifyPasswords")
 
-			data.Set("cmd", "modifyPasswords") // comando (string)
-
-			fmt.Print("Inserte URL: ")
-			var url string
-			fmt.Scanf("%s", &url)
-
-			fmt.Print("Inserte usuario: ")
-			var user string
-			fmt.Scanf("%s", &user)
-
-			fmt.Print("¿Quieres generar una contraseña aleatoria?(s/n) ")
-			var opcion string
-			fmt.Scanf("%s", &opcion)
-
-			var contraseña string
-			if opcion == "s" {
-				fmt.Print("Inserte longitud de la contraseña: ")
-				var long int
-				fmt.Scanf("%d", &long)
-
-				fmt.Print("Inserte número de digitos de la contraseña: ")
-				var numDigitos int
-				fmt.Scanf("%d", &numDigitos)
-
-				fmt.Print("Inserte número de simbolos de la contraseña: ")
-				var numSimbolos int
-				fmt.Scanf("%d", &numSimbolos)
-
-				fmt.Print("¿Permitir mayúsculas y minusculas?(t/f): ")
-				var upperLower bool
-				fmt.Scanf("%t", &upperLower)
-
-				fmt.Print("¿Repetir carácteres?(t/f): ")
-				var repeatCharacers bool
-				fmt.Scanf("%t", &repeatCharacers)
-				// Generate a password that is 64 characters long with 10 digits, 10 symbols,
-				// allowing upper and lower case letters, disallowing repeat characters.
-				// upperLower = false es que permite
-				contrasenyaa, err := password.Generate(long, numDigitos, numSimbolos, !upperLower, repeatCharacers)
-				if err != nil {
-					log.Fatal(err)
-				}
-				contraseña = contrasenyaa
-			} else {
-				fmt.Print("Introduce contraseña: ")
-				fmt.Scanf("%s", &contraseña)
-			}
-
-			fmt.Printf("La contraseña generada es: ")
-			fmt.Println(contraseña)
-
-			newPassword.Username = user
-			newPassword.Password = contraseña
-			newPassword.Site = url
-			newPassword.Modified = time.Now().String()
+			newPassword := addPassword()
 
 			passwords[len(passwords)+1] = newPassword
 
@@ -154,11 +110,11 @@ func managePasswords(client *http.Client, username string) {
 			fmt.Scanf("%s", &user)
 
 			fmt.Print("¿Quieres generar una contraseña aleatoria?(s/n) ")
-			var opcion string
-			fmt.Scanf("%s", &opcion)
+			var random string
+			fmt.Scanf("%s", &random)
 
 			var contraseña string
-			if opcion == "s" {
+			if random == "s" {
 				fmt.Print("Inserte longitud de la contraseña: ")
 				var long int
 				fmt.Scanf("%d", &long)
@@ -262,7 +218,7 @@ func manageCards(client *http.Client, username string) {
 
 	data := url.Values{} // estructura para contener los valores
 
-	data.Set("cmd", "Cards") // comando (string)
+	data.Set("cmd", "getUserCards") // comando (string)
 	data.Set("username", username)
 
 	r, err := client.PostForm(Server+"/cards", data) // enviamos por POST
@@ -450,7 +406,7 @@ func manageNotes(client *http.Client, username string) {
 
 	data := url.Values{} // estructura para contener los valores
 
-	data.Set("cmd", "Notes") // comando (string)
+	data.Set("cmd", "getUserNotes") // comando (string)
 	data.Set("username", username)
 
 	r, err := client.PostForm(Server+"/notes", data) // enviamos por POST
