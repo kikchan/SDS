@@ -10,9 +10,6 @@ import (
 	"net/url"
 	"os"
 	"strings"
-	"time"
-
-	. "github.com/logrusorgru/aurora"
 )
 
 func managePasswords(client *http.Client, username string) {
@@ -24,6 +21,9 @@ func managePasswords(client *http.Client, username string) {
 	//Request structure
 	data := url.Values{}
 	var option int
+
+	//Response structure
+	var m resp
 
 	//Set the "getUserPasswords" command
 	data.Set("cmd", "getUserPasswords")
@@ -42,8 +42,6 @@ func managePasswords(client *http.Client, username string) {
 	dec := json.NewDecoder(strings.NewReader(string(body)))
 
 	for {
-		var m resp
-
 		//Decode the server's response
 		if err := dec.Decode(&m); err == io.EOF {
 			break
@@ -80,9 +78,10 @@ func managePasswords(client *http.Client, username string) {
 		r, err := client.PostForm(Server, data)
 		chk(err)
 
-		//Shows the response's body
-		io.Copy(os.Stdout, r.Body)
-		fmt.Println()
+		//Read the body from the response
+		body, _ := ioutil.ReadAll(r.Body)
+
+		processResponse(body, &m)
 
 		return
 
@@ -101,7 +100,7 @@ func managePasswords(client *http.Client, username string) {
 			var index int
 			fmt.Scanf("%d", &index)
 
-			if index > 0 && index < len(passwords)+1 {
+			if index > 0 {
 				//Call the form to gather all password's data
 				pd := addPassword()
 
@@ -121,19 +120,18 @@ func managePasswords(client *http.Client, username string) {
 				r, err := client.PostForm(Server, data)
 				chk(err)
 
-				//Prints the server's response body
-				io.Copy(os.Stdout, r.Body)
-				fmt.Println()
-			} else {
-				fmt.Println(Red("The selected password doesn't exist"))
+				//Read the body from the response
+				body, _ := ioutil.ReadAll(r.Body)
 
-				time.Sleep(2 * time.Second)
+				processResponse(body, &m)
+			} else {
+				invalidIndex("password")
 			}
 		}
 
 		return
 
-	case 4: //Delete password
+	case 4: //Delete a password
 		clearScreen()
 
 		if showPasswords(passwords, false) {
@@ -141,7 +139,7 @@ func managePasswords(client *http.Client, username string) {
 			var index int
 			fmt.Scanf("%d", &index)
 
-			if index > 0 && index < len(passwords)+1 {
+			if index > 0 {
 				//Deletes the selected password from the map
 				delete(passwords, index)
 
@@ -158,13 +156,12 @@ func managePasswords(client *http.Client, username string) {
 				r, err := client.PostForm(Server, data)
 				chk(err)
 
-				//Prints the server's response body
-				io.Copy(os.Stdout, r.Body)
-				fmt.Println()
-			} else {
-				fmt.Println(Red("The selected password doesn't exist"))
+				//Read the body from the response
+				body, _ := ioutil.ReadAll(r.Body)
 
-				time.Sleep(2 * time.Second)
+				processResponse(body, &m)
+			} else {
+				invalidIndex("password")
 			}
 		}
 
@@ -190,6 +187,9 @@ func manageCards(client *http.Client, username string) {
 	data := url.Values{}
 	var option int
 
+	//Response structure
+	var m resp
+
 	//Set the "getUserCards" command
 	data.Set("cmd", "getUserCards")
 
@@ -207,8 +207,6 @@ func manageCards(client *http.Client, username string) {
 	dec := json.NewDecoder(strings.NewReader(string(body)))
 
 	for {
-		var m resp
-
 		//Decode the server's response
 		if err := dec.Decode(&m); err == io.EOF {
 			break
@@ -246,9 +244,10 @@ func manageCards(client *http.Client, username string) {
 		r, err := client.PostForm(Server, data)
 		chk(err)
 
-		//Shows the response's body
-		io.Copy(os.Stdout, r.Body)
-		fmt.Println()
+		//Read the body from the response
+		body, _ := ioutil.ReadAll(r.Body)
+
+		processResponse(body, &m)
 
 		return
 
@@ -267,7 +266,7 @@ func manageCards(client *http.Client, username string) {
 			var index int
 			fmt.Scanf("%d", &index)
 
-			if index > 0 && index < len(cards)+1 {
+			if index > 0 {
 				//Call the form to gather all card's data
 				cd := addCard()
 
@@ -287,13 +286,12 @@ func manageCards(client *http.Client, username string) {
 				r, err := client.PostForm(Server, data)
 				chk(err)
 
-				//Prints the server's response body
-				io.Copy(os.Stdout, r.Body)
-				fmt.Println()
-			} else {
-				fmt.Println(Red("The selected card doesn't exist"))
+				//Read the body from the response
+				body, _ := ioutil.ReadAll(r.Body)
 
-				time.Sleep(2 * time.Second)
+				processResponse(body, &m)
+			} else {
+				invalidIndex("card")
 			}
 		}
 
@@ -307,7 +305,7 @@ func manageCards(client *http.Client, username string) {
 			var index int
 			fmt.Scanf("%d", &index)
 
-			if index > 0 && index < len(cards)+1 {
+			if index > 0 {
 				//Deletes the selected card from the map
 				delete(cards, index)
 
@@ -324,13 +322,12 @@ func manageCards(client *http.Client, username string) {
 				r, err := client.PostForm(Server, data)
 				chk(err)
 
-				//Prints the server's response body
-				io.Copy(os.Stdout, r.Body)
-				fmt.Println()
-			} else {
-				fmt.Println(Red("The selected card doesn't exist"))
+				//Read the body from the response
+				body, _ := ioutil.ReadAll(r.Body)
 
-				time.Sleep(2 * time.Second)
+				processResponse(body, &m)
+			} else {
+				invalidIndex("card")
 			}
 		}
 
@@ -349,168 +346,176 @@ func manageCards(client *http.Client, username string) {
 func manageNotes(client *http.Client, username string) {
 	clearScreen()
 
-	notas := make(map[int]notesData)
+	//Creates a map of notes
+	notes := make(map[int]notesData)
 
-	data := url.Values{} // estructura para contener los valores
+	//Request structure
+	data := url.Values{}
+	var option int
 
-	data.Set("cmd", "getUserNotes") // comando (string)
+	//Response structure
+	var m resp
+
+	//Set the "getUserNotes" command
+	data.Set("cmd", "getUserNotes")
+
+	//Set the username
 	data.Set("username", username)
 
-	r, err := client.PostForm(Server, data) // enviamos por POST
+	//Set the request to the server
+	r, err := client.PostForm(Server, data)
 	chk(err)
 
-	//--------- Con esto recojo del servidor las notas y las convierto al struct
+	//Retrieve the response's body
 	body, err := ioutil.ReadAll(r.Body)
 
+	//Create a new JSON decoder
 	dec := json.NewDecoder(strings.NewReader(string(body)))
 
 	for {
-		var m resp
+		//Decode the server's response
 		if err := dec.Decode(&m); err == io.EOF {
 			break
 		} else if err != nil {
 			log.Fatal(err)
 		}
 
-		json.Unmarshal(decode64(m.Msg), &notas) // Con esto paso al map notas lo que recojo en el servidor
+		//Convert the response to a structure of notes
+		json.Unmarshal(decode64(m.Msg), &notes)
 	}
 	//------------------------------------------------------------------------
 
-	var option int
 	menuMngNotes(&option)
 
-	for {
-		switch option {
-		case 1: //add note
-			newNota := notesData{}
+	switch option {
+	case 1: //Add a note
+		clearScreen()
 
-			data := url.Values{} // estructura para contener los valores
+		//Call the form to gather all the note data
+		nd := addNote()
 
-			data.Set("cmd", "modifyNotes") // comando (string)
+		//Insert the new note into the map
+		notes[len(notes)+1] = nd
 
-			fmt.Print("Inserte nota: ")
-			var text string
-			fmt.Scanf("%s", &text)
-
-			fmt.Print("Inserte fecha: ")
-			var date string
-			fmt.Scanf("%s", &date)
-
-			newNota.Text = text
-			newNota.Date = date
-
-			notas[len(notas)+1] = newNota
-			out, err := json.Marshal(notas)
-			if err != nil {
-				panic(err)
-			}
-
-			data.Set("username", username)
-			data.Set("notas", encode64(out))
-
-			r, err := client.PostForm(Server, data) // enviamos por POST
-			chk(err)
-			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
-			fmt.Println()
-
-			return
-
-		case 2: //List notes
-			for k, v := range notas {
-				fmt.Println(k, "-. Texto: ", v.Text, ", fecha: ", v.Date)
-			}
-
-			return
-
-		case 3: //Modify note
-			modifyNota := notesData{}
-			data := url.Values{} // estructura para contener los valores
-
-			for k, v := range notas {
-				fmt.Println(k, "-. Texto: ", v.Text, ", fecha: ", v.Date)
-			}
-
-			data.Set("cmd", "modifyNotes") // comando (string)
-
-			fmt.Print("¿Que nota quieres editar?(num) ")
-			var index int
-			fmt.Scanf("%d", &index)
-
-			fmt.Print("Inserte nueva nota: ")
-			var text string
-			fmt.Scanf("%s", &text)
-
-			fmt.Print("Inserte nueva fecha: ")
-			var date string
-			fmt.Scanf("%s", &date)
-
-			modifyNota.Text = text
-			modifyNota.Date = date
-
-			notas[index] = modifyNota
-			out, err := json.Marshal(notas)
-			if err != nil {
-				panic(err)
-			}
-
-			data.Set("username", username)
-			data.Set("notas", encode64(out))
-
-			r, err := client.PostForm(Server, data) // enviamos por POST
-			chk(err)
-			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
-			fmt.Println()
-			return
-
-		case 4: //Delete note
-			data := url.Values{} // estructura para contener los valores
-
-			for k, v := range notas {
-				fmt.Println(k, "-. Texto: ", v.Text, ", fecha: ", v.Date)
-			}
-
-			data.Set("cmd", "modifyNotes") // comando (string)
-
-			fmt.Print("¿Que nota quieres borrar?(num) ")
-			var index int
-			fmt.Scanf("%d", &index)
-
-			delete(notas, index)
-
-			// KIRIL, AQUI HABRIA QUE HACER ALGO PARA QUE SE VUELVAN A COLOCAR LOS INDEX DEL MAP (YA QUE AL BORRAR SE QUEDA UNO SUELTO)
-
-			out, err := json.Marshal(notas)
-			if err != nil {
-				panic(err)
-			}
-
-			data.Set("username", username)
-			data.Set("notas", encode64(out))
-
-			r, err := client.PostForm(Server, data) // enviamos por POST
-			chk(err)
-			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
-			fmt.Println()
-
-			return
-
-		case 5:
-			logged(client, username)
-
-		default:
-			InvalidChoice()
-			manageNotes(client, username)
-
+		out, err := json.Marshal(notes)
+		if err != nil {
+			panic(err)
 		}
+
+		data.Set("cmd", "modifyNotes")
+		data.Set("username", username)
+		data.Set("notes", encode64(out))
+
+		//Send the request to the server
+		r, err := client.PostForm(Server, data)
+		chk(err)
+
+		//Read the body from the response
+		body, _ := ioutil.ReadAll(r.Body)
+
+		processResponse(body, &m)
+
+		return
+
+	case 2: //List all notes
+		clearScreen()
+
+		showNotes(notes, true)
+
+		return
+
+	case 3: //Edit a note
+		clearScreen()
+
+		if showNotes(notes, false) {
+			fmt.Print("\nWhich note do you want to edit?: ")
+			var index int
+			fmt.Scanf("%d", &index)
+
+			if index > 0 {
+				//Call the form to gather all note's data
+				nd := addNote()
+
+				//Replace the desired note with the newly generated one
+				notes[index] = nd
+
+				out, err := json.Marshal(notes)
+				if err != nil {
+					panic(err)
+				}
+
+				data.Set("cmd", "modifyNotes")
+				data.Set("username", username)
+				data.Set("notes", encode64(out))
+
+				//Send the new data to the server so it can be stored
+				r, err := client.PostForm(Server, data)
+				chk(err)
+
+				//Read the body from the response
+				body, _ := ioutil.ReadAll(r.Body)
+
+				processResponse(body, &m)
+			} else {
+				invalidIndex("note")
+			}
+		}
+
+		return
+
+	case 4: //Delete a note
+		clearScreen()
+
+		if showNotes(notes, false) {
+			fmt.Print("\nWhich note do you want to delete?: ")
+			var index int
+			fmt.Scanf("%d", &index)
+
+			if index > 0 {
+				//Deletes the selected note from the map
+				delete(notes, index)
+
+				out, err := json.Marshal(notes)
+				if err != nil {
+					panic(err)
+				}
+
+				data.Set("cmd", "modifyNotes")
+				data.Set("username", username)
+				data.Set("notes", encode64(out))
+
+				//Send the new data to the server so it can be stored
+				r, err := client.PostForm(Server, data)
+				chk(err)
+
+				//Read the body from the response
+				body, _ := ioutil.ReadAll(r.Body)
+
+				processResponse(body, &m)
+			} else {
+				invalidIndex("note")
+			}
+		}
+
+		return
+
+	case 5:
+		logged(client, username)
+
+	default:
+		InvalidChoice()
+		manageNotes(client, username)
+
 	}
 }
 
 func userSettings(client *http.Client, username string) {
 	clearScreen()
 
-	var option int
+	//Request structure
+	data := url.Values{}
 
-	data := url.Values{} //Request structure
+	var option int
 
 	menuUserSettings(&option)
 
@@ -524,13 +529,17 @@ func userSettings(client *http.Client, username string) {
 	case 4: //Change email
 
 	case 5: //Delete account
-		data.Set("cmd", "deleteUser")  // comando (string)
-		data.Set("username", username) // usuario (string)
+		data.Set("cmd", "deleteUser")
+		data.Set("username", username)
 
-		r, err := client.PostForm(Server, data) // enviamos por POST
+		//Send the new data to the server so the user gets deleted
+		r, err := client.PostForm(Server, data)
 		chk(err)
-		io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
+
+		//Prints the server's response body
+		io.Copy(os.Stdout, r.Body)
 		fmt.Println()
+
 		return
 
 	case 6: //Go back

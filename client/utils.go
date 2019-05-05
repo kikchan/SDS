@@ -1,17 +1,20 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"compress/zlib"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 
 	. "github.com/logrusorgru/aurora"
@@ -85,4 +88,29 @@ func coloredMenu(title string) {
 	fmt.Println(Green("--------------------------"))
 	fmt.Println(Green("|"), Red("\t"+title+"\t"), Green("|"))
 	fmt.Println(Green("--------------------------\n"))
+}
+
+func processResponse(body []byte, m *resp) {
+	//Creates a new JSON decoder
+	dec := json.NewDecoder(strings.NewReader(string(body)))
+
+	//Convert the body to a json structure
+	dec.Decode(&m)
+
+	fmt.Println()
+
+	if m.Code == 1 {
+		fmt.Println(Green(m.Msg))
+	} else {
+		fmt.Println(Red(m.Msg))
+	}
+
+	fmt.Print("Press any key to continue...")
+	bufio.NewReader(os.Stdin).ReadBytes('\n')
+}
+
+func invalidIndex(typeOfField string) {
+	fmt.Println(Red("The selected" + typeOfField + " doesn't exist"))
+	fmt.Println("Press any key to continue...")
+	bufio.NewReader(os.Stdin).ReadBytes('\n')
 }

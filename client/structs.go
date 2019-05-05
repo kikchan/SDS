@@ -41,6 +41,6 @@ type user struct {
 
 //Server's response
 type resp struct {
-	Ok  bool
-	Msg string
+	Code int
+	Msg  string
 }

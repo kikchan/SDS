@@ -166,10 +166,10 @@ func handler(w http.ResponseWriter, req *http.Request) {
 	case "modifyNotes":
 		//Store in a variable the username and notes to modify
 		username := req.Form.Get("username")
-		notas := req.Form.Get("notas")
+		notes := req.Form.Get("notes")
 
 		//Query the database to update the notes
-		code, msg := updateNote(username, notas)
+		code, msg := updateNote(username, notes)
 
 		response(w, code, msg)
 

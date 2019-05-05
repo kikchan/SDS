@@ -110,9 +110,9 @@ func addPassword() passwordsData {
 
 func addCard() cardsData {
 	var cd cardsData
+	in := bufio.NewReader(os.Stdin)
 
 	fmt.Print("Enter the name of the owner: ")
-	in := bufio.NewReader(os.Stdin)
 	line, _ := in.ReadString('\n')
 	cd.Owner = strings.TrimSuffix(line, "\n")
 
@@ -122,8 +122,34 @@ func addCard() cardsData {
 	fmt.Print("Enter the card's secred number (CCV): ")
 	fmt.Scanln(&cd.Ccv)
 
-	fmt.Print("Enther the card's expiry date (E.g. 01/20): ")
+	fmt.Print("Enter the card's expiry date (E.g. 01/20): ")
 	fmt.Scanln(&cd.Expiry)
 
 	return cd
+}
+
+func addNote() notesData {
+	var nd notesData
+	in := bufio.NewReader(os.Stdin)
+
+	fmt.Println("Enter the note's text: ")
+	line, _ := in.ReadString('\n')
+	nd.Text = line
+
+	nd.Date = time.Now().Format("2006-01-02 15:04:05")
+
+	return nd
+}
+
+func deleteUser() bool {
+	fmt.Print("This will", Red("erase"), "all your stores passwords, cards and notes. Are you sure? (y/n): ")
+	var choice string
+
+	fmt.Scanln(&choice)
+
+	if choice == "y" {
+		return true
+	} else {
+		return false
+	}
 }

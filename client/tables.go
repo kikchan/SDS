@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"os"
 	"strconv"
 	"time"
 
@@ -57,7 +59,8 @@ func showPasswords(passwords map[int]passwordsData, displayPass bool) bool {
 
 		foundAnyPasswords = false
 
-		time.Sleep(2 * time.Second)
+		fmt.Println("Press any key to continue...")
+		bufio.NewReader(os.Stdin).ReadBytes('\n')
 	}
 
 	return foundAnyPasswords
@@ -82,7 +85,7 @@ func showCards(cards map[int]cardsData, displayCCV bool) bool {
 			if len(v.Owner) >= 20 {
 				fmt.Print(Blue(v.Owner), "\t| ")
 			} else {
-				fmt.Print(Blue(v.Owner), "\t\t\t| ")
+				fmt.Print(Blue(v.Owner), "\t\t| ")
 			}
 
 			fmt.Print(Bold(Green(v.Pan)), "\t| ")
@@ -104,8 +107,40 @@ func showCards(cards map[int]cardsData, displayCCV bool) bool {
 
 		foundAnyCards = false
 
-		time.Sleep(2 * time.Second)
+		fmt.Println("Press any key to continue...")
+		bufio.NewReader(os.Stdin).ReadBytes('\n')
 	}
 
 	return foundAnyCards
+}
+
+func showNotes(notes map[int]notesData, displayMsg bool) bool {
+	var foundAnyNotes bool
+
+	if len(notes) > 0 {
+		fmt.Println(" #\t | Date \t\t | Text")
+		fmt.Println("---------------------------------------------------------------------------")
+
+		for k, v := range notes {
+			fmt.Print("[" + strconv.Itoa(k) + "]\t | ")
+			fmt.Print(v.Date, "\t | ")
+			fmt.Println(Blue(v.Text))
+		}
+
+		foundAnyNotes = true
+
+		if displayMsg {
+			fmt.Print("\nPress any key to continue...")
+			bufio.NewReader(os.Stdin).ReadBytes('\n')
+		}
+	} else {
+		fmt.Println(Red("No notes to show"))
+
+		foundAnyNotes = false
+
+		fmt.Print("Press any key to continue...")
+		bufio.NewReader(os.Stdin).ReadBytes('\n')
+	}
+
+	return foundAnyNotes
 }
