@@ -41,19 +41,19 @@ func register(username *string, password *string, name *string, surname *string,
 }
 
 func addPassword() passwordsData {
-	var newPassword passwordsData
+	var pd passwordsData
 	var random string
 
-	newPassword.Modified = time.Now().Format("2006-01-02 15:04:05")
+	pd.Modified = time.Now().Format("2006-01-02 15:04:05")
 
 	fmt.Print("Enter the URL of the password's site: ")
-	fmt.Scanln("%s", newPassword.Site)
+	fmt.Scanln(&pd.Site)
 
 	fmt.Print("Enter your username: ")
-	fmt.Scanln("%s", newPassword.Username)
+	fmt.Scanln(&pd.Username)
 
 	fmt.Print("Would you like to generate a random password for it? (y/n): ")
-	fmt.Scanln("%s", random)
+	fmt.Scanln(&random)
 
 	if random == "y" {
 		var size, nDigits, nSymbols int
@@ -62,23 +62,23 @@ func addPassword() passwordsData {
 		var repeat = false
 
 		fmt.Print("Size of the password: ")
-		fmt.Scanln("%d", size)
+		fmt.Scanln(&size)
 
 		fmt.Print("Number of digits: ")
-		fmt.Scanln("%d", nDigits)
+		fmt.Scanln(&nDigits)
 
 		fmt.Print("Number of symbols: ")
-		fmt.Scanln("%d", nSymbols)
+		fmt.Scanln(&nSymbols)
 
-		fmt.Print("Allow upper and lowercase letters? (t/f): ")
-		fmt.Scanln("%s", choice)
+		fmt.Print("Allow upper and lowercase letters? (y/n): ")
+		fmt.Scanln(&choice)
 
 		if choice == "y" {
 			upperLower = true
 		}
 
-		fmt.Print("Repeat characters? (t/f): ")
-		fmt.Scanln("%s", choice)
+		fmt.Print("Repeat characters? (y/n): ")
+		fmt.Scanln(&choice)
 
 		if choice == "y" {
 			repeat = true
@@ -91,11 +91,16 @@ func addPassword() passwordsData {
 			log.Fatal(err)
 		}
 
-		newPassword.Password = pass
+		pd.Password = pass
+
+		fmt.Println(Bold(Red("Showing the generated password for")), Underline(Bold(White("5 seconds!"))))
+		fmt.Println(pd.Password)
+
+		time.Sleep(5 * time.Second)
 	} else {
 		fmt.Print("Enter your password: ")
-		fmt.Scanln("%s", newPassword.Password)
+		fmt.Scanln(&pd.Password)
 	}
 
-	return newPassword
+	return pd
 }

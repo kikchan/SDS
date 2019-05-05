@@ -9,15 +9,18 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
+	. "github.com/logrusorgru/aurora"
 	"github.com/sethvargo/go-password/password"
 )
 
 func managePasswords(client *http.Client, username string) {
 	clearScreen()
 
+	//Creates a map of passwords
 	passwords := make(map[int]passwordsData)
 
 	//Request structure
@@ -57,157 +60,190 @@ func managePasswords(client *http.Client, username string) {
 
 	menuMngPasswords(&option)
 
-	for {
-		switch option {
-		case 1:
-			data.Set("cmd", "modifyPasswords")
+	switch option {
+	case 1: //Add password
+		pd := addPassword()
 
-			newPassword := addPassword()
+		//Insert the new password into the map
+		passwords[len(passwords)+1] = pd
 
-			passwords[len(passwords)+1] = newPassword
-
-			out, err := json.Marshal(passwords)
-			if err != nil {
-				panic(err)
-			}
-
-			data.Set("username", username)
-			data.Set("passwords", encode64(out))
-
-			r, err := client.PostForm(Server+"/passwords", data) // enviamos por POST
-			chk(err)
-			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
-			fmt.Println()
-
-			return
-
-		case 2: //List password
-			for k, v := range passwords {
-				fmt.Println(k, "-. URL: ", v.Site, ", de: ", v.Username)
-			}
-
-			return
-
-		case 3: //Modify password
-			modifyPasswords := passwordsData{}
-
-			for k, v := range passwords {
-				fmt.Println(k, "-. URL: ", v.Site, ", de: ", v.Username)
-			}
-
-			data.Set("cmd", "modifyPasswords") // comando (string)
-
-			fmt.Print("¿Que contraseña quieres editar?(num) ")
-			var index int
-			fmt.Scanf("%d", &index)
-
-			fmt.Print("Inserte URL: ")
-			var url string
-			fmt.Scanf("%s", &url)
-
-			fmt.Print("Inserte usuario: ")
-			var user string
-			fmt.Scanf("%s", &user)
-
-			fmt.Print("¿Quieres generar una contraseña aleatoria?(s/n) ")
-			var random string
-			fmt.Scanf("%s", &random)
-
-			var contraseña string
-			if random == "s" {
-				fmt.Print("Inserte longitud de la contraseña: ")
-				var long int
-				fmt.Scanf("%d", &long)
-
-				fmt.Print("Inserte número de digitos de la contraseña: ")
-				var numDigitos int
-				fmt.Scanf("%d", &numDigitos)
-
-				fmt.Print("Inserte número de simbolos de la contraseña: ")
-				var numSimbolos int
-				fmt.Scanf("%d", &numSimbolos)
-
-				fmt.Print("¿Permitir mayúsculas y minusculas?(t/f): ")
-				var upperLower bool
-				fmt.Scanf("%t", &upperLower)
-
-				fmt.Print("¿Repetir carácteres?(t/f): ")
-				var repeatCharacers bool
-				fmt.Scanf("%t", &repeatCharacers)
-				// Generate a password that is 64 characters long with 10 digits, 10 symbols,
-				// allowing upper and lower case letters, disallowing repeat characters.
-				// upperLower = false es que permite
-				contrasenyaa, err := password.Generate(long, numDigitos, numSimbolos, !upperLower, repeatCharacers)
-				if err != nil {
-					log.Fatal(err)
-				}
-				contraseña = contrasenyaa
-			} else {
-				fmt.Print("Introduce contraseña: ")
-				fmt.Scanf("%s", &contraseña)
-			}
-
-			fmt.Printf("La contraseña generada es: ")
-			fmt.Println(contraseña)
-
-			modifyPasswords.Username = user
-			modifyPasswords.Password = contraseña
-			modifyPasswords.Site = url
-			modifyPasswords.Modified = time.Now().String()
-
-			passwords[index] = modifyPasswords
-			out, err := json.Marshal(passwords)
-			if err != nil {
-				panic(err)
-			}
-
-			data.Set("username", username)
-			data.Set("passwords", encode64(out))
-
-			r, err := client.PostForm(Server+"/passwords", data) // enviamos por POST
-			chk(err)
-			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
-			fmt.Println()
-			return
-
-		case 4: //Delete password
-			for k, v := range passwords {
-				fmt.Println(k, "-. URL: ", v.Site, ", de: ", v.Username)
-			}
-
-			data.Set("cmd", "modifyPasswords") // comando (string)
-
-			fmt.Print("¿Que contraseña quieres borrar?(num) ")
-			var index int
-			fmt.Scanf("%d", &index)
-
-			delete(passwords, index)
-
-			// KIRIL, AQUI HABRIA QUE HACER ALGO PARA QUE SE VUELVAN A COLOCAR LOS INDEX DEL MAP (YA QUE AL BORRAR SE QUEDA UNO SUELTO)
-
-			out, err := json.Marshal(passwords)
-			if err != nil {
-				panic(err)
-			}
-
-			data.Set("username", username)
-			data.Set("passwords", encode64(out))
-
-			r, err := client.PostForm(Server+"/passwords", data) // enviamos por POST
-			chk(err)
-			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
-			fmt.Println()
-
-			return
-
-		case 5:
-			logged(client, username)
-
-		default:
-			InvalidChoice()
-			managePasswords(client, username)
-
+		out, err := json.Marshal(passwords)
+		if err != nil {
+			panic(err)
 		}
+
+		data.Set("cmd", "modifyPasswords")
+		data.Set("username", username)
+		data.Set("passwords", encode64(out))
+
+		r, err := client.PostForm(Server+"/passwords", data)
+		chk(err)
+
+		//Shows the response's body
+		io.Copy(os.Stdout, r.Body)
+		fmt.Println()
+
+		return
+
+	case 2: //List password
+		clearScreen()
+
+		if len(passwords) > 0 {
+			fmt.Println(Bold(Red("Showing passwords for")), Underline(Bold(White("5 seconds!"))))
+
+			fmt.Println(" #\t | Site\t\t| Username\t| Password\t| Last modified")
+			fmt.Println("-----------------------------------------------------------------------------")
+
+			for k, v := range passwords {
+				fmt.Print("[" + strconv.Itoa(k) + "]\t | ")
+
+				if len(v.Site) > 5 {
+					fmt.Print(Blue(v.Site), "\t| ")
+				} else {
+					fmt.Print(Blue(v.Site), "\t\t| ")
+				}
+
+				if len(v.Username) > 5 {
+					fmt.Print(Bold(Green(v.Username)), "\t| ")
+				} else {
+					fmt.Print(Bold(Green(v.Username)), "\t\t| ")
+				}
+
+				if len(v.Password) > 5 {
+					fmt.Print(Bold(Red(v.Password)), "\t| ")
+				} else {
+					fmt.Print(Bold(Red(v.Password)), "\t\t| ")
+				}
+
+				fmt.Println(v.Modified)
+			}
+
+			time.Sleep(5 * time.Second)
+		} else {
+			fmt.Println(Red("No passwords to show"))
+		}
+
+		return
+
+	case 3: //Modify password
+		modifyPasswords := passwordsData{}
+
+		for k, v := range passwords {
+			fmt.Println(k, "-. URL: ", v.Site, ", de: ", v.Username)
+		}
+
+		data.Set("cmd", "modifyPasswords") // comando (string)
+
+		fmt.Print("¿Que contraseña quieres editar?(num) ")
+		var index int
+		fmt.Scanf("%d", &index)
+
+		fmt.Print("Inserte URL: ")
+		var url string
+		fmt.Scanf("%s", &url)
+
+		fmt.Print("Inserte usuario: ")
+		var user string
+		fmt.Scanf("%s", &user)
+
+		fmt.Print("¿Quieres generar una contraseña aleatoria?(s/n) ")
+		var random string
+		fmt.Scanf("%s", &random)
+
+		var contraseña string
+		if random == "s" {
+			fmt.Print("Inserte longitud de la contraseña: ")
+			var long int
+			fmt.Scanf("%d", &long)
+
+			fmt.Print("Inserte número de digitos de la contraseña: ")
+			var numDigitos int
+			fmt.Scanf("%d", &numDigitos)
+
+			fmt.Print("Inserte número de simbolos de la contraseña: ")
+			var numSimbolos int
+			fmt.Scanf("%d", &numSimbolos)
+
+			fmt.Print("¿Permitir mayúsculas y minusculas?(t/f): ")
+			var upperLower bool
+			fmt.Scanf("%t", &upperLower)
+
+			fmt.Print("¿Repetir carácteres?(t/f): ")
+			var repeatCharacers bool
+			fmt.Scanf("%t", &repeatCharacers)
+			// Generate a password that is 64 characters long with 10 digits, 10 symbols,
+			// allowing upper and lower case letters, disallowing repeat characters.
+			// upperLower = false es que permite
+			contrasenyaa, err := password.Generate(long, numDigitos, numSimbolos, !upperLower, repeatCharacers)
+			if err != nil {
+				log.Fatal(err)
+			}
+			contraseña = contrasenyaa
+		} else {
+			fmt.Print("Introduce contraseña: ")
+			fmt.Scanf("%s", &contraseña)
+		}
+
+		fmt.Printf("La contraseña generada es: ")
+		fmt.Println(contraseña)
+
+		modifyPasswords.Username = user
+		modifyPasswords.Password = contraseña
+		modifyPasswords.Site = url
+		modifyPasswords.Modified = time.Now().String()
+
+		passwords[index] = modifyPasswords
+		out, err := json.Marshal(passwords)
+		if err != nil {
+			panic(err)
+		}
+
+		data.Set("username", username)
+		data.Set("passwords", encode64(out))
+
+		r, err := client.PostForm(Server+"/passwords", data) // enviamos por POST
+		chk(err)
+		io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
+		fmt.Println()
+		return
+
+	case 4: //Delete password
+		for k, v := range passwords {
+			fmt.Println(k, "-. URL: ", v.Site, ", de: ", v.Username)
+		}
+
+		data.Set("cmd", "modifyPasswords") // comando (string)
+
+		fmt.Print("¿Que contraseña quieres borrar?(num) ")
+		var index int
+		fmt.Scanf("%d", &index)
+
+		delete(passwords, index)
+
+		// KIRIL, AQUI HABRIA QUE HACER ALGO PARA QUE SE VUELVAN A COLOCAR LOS INDEX DEL MAP (YA QUE AL BORRAR SE QUEDA UNO SUELTO)
+
+		out, err := json.Marshal(passwords)
+		if err != nil {
+			panic(err)
+		}
+
+		data.Set("username", username)
+		data.Set("passwords", encode64(out))
+
+		r, err := client.PostForm(Server+"/passwords", data) // enviamos por POST
+		chk(err)
+		io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
+		fmt.Println()
+
+		return
+
+	case 5:
+		logged(client, username)
+
+	default:
+		InvalidChoice()
+		managePasswords(client, username)
+
 	}
 }
 
