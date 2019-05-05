@@ -7,7 +7,6 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -97,6 +96,11 @@ func publicMenu(client *http.Client) {
 
 	//Request structure
 	var data = url.Values{}
+
+	//Response structure
+	var m resp
+
+	//User's choice
 	var option int
 
 	menu(&option)
@@ -214,9 +218,14 @@ func publicMenu(client *http.Client) {
 		r, err := client.PostForm(Server, data)
 		chk(err)
 
-		//Print the response's body
-		io.Copy(os.Stdout, r.Body)
-		fmt.Println()
+		//Read the body from the response
+		body, _ := ioutil.ReadAll(r.Body)
+
+		processResponse(body, &m)
+
+		if m.Code == 1 {
+			logged(client, username)
+		}
 
 	case 3:
 		//Set the "close" command

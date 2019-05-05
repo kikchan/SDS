@@ -8,7 +8,6 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 )
 
@@ -20,10 +19,12 @@ func managePasswords(client *http.Client, username string) {
 
 	//Request structure
 	data := url.Values{}
-	var option int
 
 	//Response structure
 	var m resp
+
+	//User's choice
+	var option int
 
 	//Set the "getUserPasswords" command
 	data.Set("cmd", "getUserPasswords")
@@ -185,10 +186,12 @@ func manageCards(client *http.Client, username string) {
 
 	//Request structure
 	data := url.Values{}
-	var option int
 
 	//Response structure
 	var m resp
+
+	//User's choice
+	var option int
 
 	//Set the "getUserCards" command
 	data.Set("cmd", "getUserCards")
@@ -351,10 +354,12 @@ func manageNotes(client *http.Client, username string) {
 
 	//Request structure
 	data := url.Values{}
-	var option int
 
 	//Response structure
 	var m resp
+
+	//User's choice
+	var option int
 
 	//Set the "getUserNotes" command
 	data.Set("cmd", "getUserNotes")
@@ -515,6 +520,10 @@ func userSettings(client *http.Client, username string) {
 	//Request structure
 	data := url.Values{}
 
+	//Response structure
+	var m resp
+
+	//User's choice
 	var option int
 
 	menuUserSettings(&option)
@@ -529,16 +538,22 @@ func userSettings(client *http.Client, username string) {
 	case 4: //Change email
 
 	case 5: //Delete account
-		data.Set("cmd", "deleteUser")
-		data.Set("username", username)
+		clearScreen()
 
-		//Send the new data to the server so the user gets deleted
-		r, err := client.PostForm(Server, data)
-		chk(err)
+		if deleteUser() {
+			data.Set("cmd", "deleteUser")
+			data.Set("username", username)
 
-		//Prints the server's response body
-		io.Copy(os.Stdout, r.Body)
-		fmt.Println()
+			//Send the new data to the server so the user gets deleted
+			r, err := client.PostForm(Server, data)
+			chk(err)
+
+			body, _ := ioutil.ReadAll(r.Body)
+
+			processResponse(body, &m)
+
+			publicMenu(client)
+		}
 
 		return
 

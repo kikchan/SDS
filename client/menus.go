@@ -81,7 +81,7 @@ func menuMngNotes(option *int) {
 }
 
 func menuUserSettings(option *int) {
-	coloredMenu("User settings menu")
+	coloredMenu("User menu")
 
 	menuUserSettings :=
 		"[ 1 ] View user data\n" +

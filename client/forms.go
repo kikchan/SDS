@@ -145,7 +145,10 @@ func deleteUser() bool {
 	var choice string
 	deleted := false
 
-	fmt.Print("This will", Red("erase"), "all your stores passwords, cards and notes. Are you sure? (y/n): ")
+	coloredMenu("WARNING!")
+
+	fmt.Print("This will ", Red("erase"), " all your stores passwords, cards and notes.\n\n")
+	fmt.Print("Are you ", Yellow("sure"), "? (y/n): ")
 
 	fmt.Scanln(&choice)
 
