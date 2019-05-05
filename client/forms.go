@@ -142,14 +142,16 @@ func addNote() notesData {
 }
 
 func deleteUser() bool {
-	fmt.Print("This will", Red("erase"), "all your stores passwords, cards and notes. Are you sure? (y/n): ")
 	var choice string
+	deleted := false
+
+	fmt.Print("This will", Red("erase"), "all your stores passwords, cards and notes. Are you sure? (y/n): ")
 
 	fmt.Scanln(&choice)
 
 	if choice == "y" {
-		return true
-	} else {
-		return false
+		deleted = true
 	}
+
+	return deleted
 }
