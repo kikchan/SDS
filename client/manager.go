@@ -9,12 +9,10 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
 	. "github.com/logrusorgru/aurora"
-	"github.com/sethvargo/go-password/password"
 )
 
 func managePasswords(client *http.Client, username string) {
@@ -34,7 +32,7 @@ func managePasswords(client *http.Client, username string) {
 	data.Set("username", username)
 
 	//Send the request to the server
-	r, err := client.PostForm(Server+"/cards", data)
+	r, err := client.PostForm(Server, data)
 	chk(err)
 
 	//Retrieve the response's body
@@ -61,7 +59,10 @@ func managePasswords(client *http.Client, username string) {
 	menuMngPasswords(&option)
 
 	switch option {
-	case 1: //Add password
+	case 1: //Add a password
+		clearScreen()
+
+		//Call the form to gather all the password data
 		pd := addPassword()
 
 		//Insert the new password into the map
@@ -76,7 +77,7 @@ func managePasswords(client *http.Client, username string) {
 		data.Set("username", username)
 		data.Set("passwords", encode64(out))
 
-		r, err := client.PostForm(Server+"/passwords", data)
+		r, err := client.PostForm(Server, data)
 		chk(err)
 
 		//Shows the response's body
@@ -85,155 +86,87 @@ func managePasswords(client *http.Client, username string) {
 
 		return
 
-	case 2: //List password
+	case 2: //List all passwords
 		clearScreen()
 
-		if len(passwords) > 0 {
-			fmt.Println(Bold(Red("Showing passwords for")), Underline(Bold(White("5 seconds!"))))
-
-			fmt.Println(" #\t | Site\t\t| Username\t| Password\t| Last modified")
-			fmt.Println("-----------------------------------------------------------------------------")
-
-			for k, v := range passwords {
-				fmt.Print("[" + strconv.Itoa(k) + "]\t | ")
-
-				if len(v.Site) > 5 {
-					fmt.Print(Blue(v.Site), "\t| ")
-				} else {
-					fmt.Print(Blue(v.Site), "\t\t| ")
-				}
-
-				if len(v.Username) > 5 {
-					fmt.Print(Bold(Green(v.Username)), "\t| ")
-				} else {
-					fmt.Print(Bold(Green(v.Username)), "\t\t| ")
-				}
-
-				if len(v.Password) > 5 {
-					fmt.Print(Bold(Red(v.Password)), "\t| ")
-				} else {
-					fmt.Print(Bold(Red(v.Password)), "\t\t| ")
-				}
-
-				fmt.Println(v.Modified)
-			}
-
-			time.Sleep(5 * time.Second)
-		} else {
-			fmt.Println(Red("No passwords to show"))
-		}
+		showPasswords(passwords, true)
 
 		return
 
-	case 3: //Modify password
-		modifyPasswords := passwordsData{}
+	case 3: //Edit a password
+		clearScreen()
 
-		for k, v := range passwords {
-			fmt.Println(k, "-. URL: ", v.Site, ", de: ", v.Username)
-		}
+		if showPasswords(passwords, false) {
+			fmt.Print("\n\nWhich password do you want to edit?: ")
+			var index int
+			fmt.Scanf("%d", &index)
 
-		data.Set("cmd", "modifyPasswords") // comando (string)
+			if index > 0 && index < len(passwords)+1 {
+				//Call the form to gather all password's data
+				pd := addPassword()
 
-		fmt.Print("¿Que contraseña quieres editar?(num) ")
-		var index int
-		fmt.Scanf("%d", &index)
+				//Replace the desired password with the newly generated one
+				passwords[index] = pd
 
-		fmt.Print("Inserte URL: ")
-		var url string
-		fmt.Scanf("%s", &url)
+				out, err := json.Marshal(passwords)
+				if err != nil {
+					panic(err)
+				}
 
-		fmt.Print("Inserte usuario: ")
-		var user string
-		fmt.Scanf("%s", &user)
+				data.Set("cmd", "modifyPasswords")
+				data.Set("username", username)
+				data.Set("passwords", encode64(out))
 
-		fmt.Print("¿Quieres generar una contraseña aleatoria?(s/n) ")
-		var random string
-		fmt.Scanf("%s", &random)
+				//Send the new data to the server so it can be stored
+				r, err := client.PostForm(Server, data)
+				chk(err)
 
-		var contraseña string
-		if random == "s" {
-			fmt.Print("Inserte longitud de la contraseña: ")
-			var long int
-			fmt.Scanf("%d", &long)
+				//Prints the server's response body
+				io.Copy(os.Stdout, r.Body)
+				fmt.Println()
+			} else {
+				fmt.Println(Red("The selected password doesn't exist"))
 
-			fmt.Print("Inserte número de digitos de la contraseña: ")
-			var numDigitos int
-			fmt.Scanf("%d", &numDigitos)
-
-			fmt.Print("Inserte número de simbolos de la contraseña: ")
-			var numSimbolos int
-			fmt.Scanf("%d", &numSimbolos)
-
-			fmt.Print("¿Permitir mayúsculas y minusculas?(t/f): ")
-			var upperLower bool
-			fmt.Scanf("%t", &upperLower)
-
-			fmt.Print("¿Repetir carácteres?(t/f): ")
-			var repeatCharacers bool
-			fmt.Scanf("%t", &repeatCharacers)
-			// Generate a password that is 64 characters long with 10 digits, 10 symbols,
-			// allowing upper and lower case letters, disallowing repeat characters.
-			// upperLower = false es que permite
-			contrasenyaa, err := password.Generate(long, numDigitos, numSimbolos, !upperLower, repeatCharacers)
-			if err != nil {
-				log.Fatal(err)
+				time.Sleep(2 * time.Second)
 			}
-			contraseña = contrasenyaa
-		} else {
-			fmt.Print("Introduce contraseña: ")
-			fmt.Scanf("%s", &contraseña)
 		}
 
-		fmt.Printf("La contraseña generada es: ")
-		fmt.Println(contraseña)
-
-		modifyPasswords.Username = user
-		modifyPasswords.Password = contraseña
-		modifyPasswords.Site = url
-		modifyPasswords.Modified = time.Now().String()
-
-		passwords[index] = modifyPasswords
-		out, err := json.Marshal(passwords)
-		if err != nil {
-			panic(err)
-		}
-
-		data.Set("username", username)
-		data.Set("passwords", encode64(out))
-
-		r, err := client.PostForm(Server+"/passwords", data) // enviamos por POST
-		chk(err)
-		io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
-		fmt.Println()
 		return
 
 	case 4: //Delete password
-		for k, v := range passwords {
-			fmt.Println(k, "-. URL: ", v.Site, ", de: ", v.Username)
+		clearScreen()
+
+		if showPasswords(passwords, false) {
+			fmt.Print("\n\nWhich password do you want to delete?: ")
+			var index int
+			fmt.Scanf("%d", &index)
+
+			if index > 0 && index < len(passwords)+1 {
+				//Deletes the selected password from the map
+				delete(passwords, index)
+
+				out, err := json.Marshal(passwords)
+				if err != nil {
+					panic(err)
+				}
+
+				data.Set("cmd", "modifyPasswords")
+				data.Set("username", username)
+				data.Set("passwords", encode64(out))
+
+				//Send the new data to the server so it can be stored
+				r, err := client.PostForm(Server, data)
+				chk(err)
+
+				//Prints the server's response body
+				io.Copy(os.Stdout, r.Body)
+				fmt.Println()
+			} else {
+				fmt.Println(Red("The selected password doesn't exist"))
+
+				time.Sleep(2 * time.Second)
+			}
 		}
-
-		data.Set("cmd", "modifyPasswords") // comando (string)
-
-		fmt.Print("¿Que contraseña quieres borrar?(num) ")
-		var index int
-		fmt.Scanf("%d", &index)
-
-		delete(passwords, index)
-
-		// KIRIL, AQUI HABRIA QUE HACER ALGO PARA QUE SE VUELVAN A COLOCAR LOS INDEX DEL MAP (YA QUE AL BORRAR SE QUEDA UNO SUELTO)
-
-		out, err := json.Marshal(passwords)
-		if err != nil {
-			panic(err)
-		}
-
-		data.Set("username", username)
-		data.Set("passwords", encode64(out))
-
-		r, err := client.PostForm(Server+"/passwords", data) // enviamos por POST
-		chk(err)
-		io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
-		fmt.Println()
 
 		return
 
@@ -250,188 +183,166 @@ func managePasswords(client *http.Client, username string) {
 func manageCards(client *http.Client, username string) {
 	clearScreen()
 
-	tarjetas := make(map[int]cardsData)
+	//Creates a map of cards
+	cards := make(map[int]cardsData)
 
-	data := url.Values{} // estructura para contener los valores
+	//Request structure
+	data := url.Values{}
+	var option int
 
-	data.Set("cmd", "getUserCards") // comando (string)
+	//Set the "getUserCards" command
+	data.Set("cmd", "getUserCards")
+
+	//Set the username
 	data.Set("username", username)
 
-	r, err := client.PostForm(Server+"/cards", data) // enviamos por POST
+	//Send the request to the server
+	r, err := client.PostForm(Server, data)
 	chk(err)
 
-	//--------- Con esto recojo del servidor las tarjetas y las convierto al struct
+	//Retrieve the response's body
 	body, err := ioutil.ReadAll(r.Body)
 
+	//Create a new JSON decoder
 	dec := json.NewDecoder(strings.NewReader(string(body)))
 
 	for {
 		var m resp
+
+		//Decode the server's response
 		if err := dec.Decode(&m); err == io.EOF {
 			break
 		} else if err != nil {
 			log.Fatal(err)
 		}
 
-		json.Unmarshal(decode64(m.Msg), &tarjetas) // Con esto paso al map notas lo que recojo en el servidor
+		//Convert the response to a structure ot cards
+		json.Unmarshal(decode64(m.Msg), &cards)
 	}
 	//------------------------------------------------------------------------
 
-	var option int
 	menuMngCards(&option)
 
-	for {
-		switch option {
-		case 1: //addCard
-			newCard := cardsData{}
+	switch option {
+	case 1: //Add a card
+		clearScreen()
 
-			data := url.Values{} // estructura para contener los valores
+		//Call the form to gather all the card data
+		pd := addCard()
 
-			data.Set("cmd", "modifyCards") // comando (string)
+		//Insert the new card into the map
+		cards[len(cards)+1] = pd
 
-			fmt.Print("Inserte propietario de la tarjeta: ")
-			var owner string
-			fmt.Scanf("%s", &owner)
-
-			fmt.Print("Inserte número de la tarjeta: ")
-			var pan string
-			fmt.Scanf("%s", &pan)
-
-			fmt.Print("Inserte CCV: ")
-			var ccv string
-			fmt.Scanf("%s", &ccv)
-
-			fmt.Print("Inserte mes de caducidad: ")
-			var month string
-			fmt.Scanf("%s", &month)
-
-			fmt.Print("Inserte año de caducidad: ")
-			var year string
-			fmt.Scanf("%s", &year)
-
-			newCard.Pan = pan
-			newCard.Owner = owner
-			newCard.Ccv = ccv
-			newCard.Expiry = month + "-" + year
-
-			tarjetas[len(tarjetas)+1] = newCard
-
-			out, err := json.Marshal(tarjetas)
-			if err != nil {
-				panic(err)
-			}
-
-			data.Set("username", username)
-			data.Set("cards", encode64(out))
-
-			r, err := client.PostForm(Server+"/cards", data) // enviamos por POST
-			chk(err)
-			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
-			fmt.Println()
-
-			return
-
-		case 2: //List cards
-			for k, v := range tarjetas {
-				fmt.Println(k, "-. Número: ", v.Pan, ", de: ", v.Owner)
-			}
-
-			return
-
-		case 3: //Modify card
-			modifyCard := cardsData{}
-			data := url.Values{} // estructura para contener los valores
-
-			for k, v := range tarjetas {
-				fmt.Println(k, "-. Número: ", v.Pan, ", de: ", v.Owner)
-			}
-
-			data.Set("cmd", "modifyCards") // comando (string)
-
-			fmt.Print("¿Que tarjeta quieres editar?(num) ")
-			var index int
-			fmt.Scanf("%d", &index)
-
-			fmt.Print("Inserte propietario de la tarjeta: ")
-			var owner string
-			fmt.Scanf("%s", &owner)
-
-			fmt.Print("Inserte número de la tarjeta: ")
-			var pan string
-			fmt.Scanf("%s", &pan)
-
-			fmt.Print("Inserte CCV: ")
-			var ccv string
-			fmt.Scanf("%s", &ccv)
-
-			fmt.Print("Inserte mes de caducidad: ")
-			var month string
-			fmt.Scanf("%s", &month)
-
-			fmt.Print("Inserte año de caducidad: ")
-			var year string
-			fmt.Scanf("%s", &year)
-
-			modifyCard.Pan = pan
-			modifyCard.Owner = owner
-			modifyCard.Ccv = ccv
-			modifyCard.Expiry = month + "-" + year
-
-			tarjetas[index] = modifyCard
-			out, err := json.Marshal(tarjetas)
-			if err != nil {
-				panic(err)
-			}
-
-			data.Set("username", username)
-			data.Set("cards", encode64(out))
-
-			r, err := client.PostForm(Server+"/cards", data) // enviamos por POST
-			chk(err)
-			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
-			fmt.Println()
-			return
-
-		case 4: //Delete card
-			data := url.Values{} // estructura para contener los valores
-
-			for k, v := range tarjetas {
-				fmt.Println(k, "-. Número: ", v.Pan, ", de: ", v.Owner)
-			}
-
-			data.Set("cmd", "modifyCards") // comando (string)
-
-			fmt.Print("¿Que tarjeta quieres borrar?(num) ")
-			var index int
-			fmt.Scanf("%d", &index)
-
-			delete(tarjetas, index)
-
-			// KIRIL, AQUI HABRIA QUE HACER ALGO PARA QUE SE VUELVAN A COLOCAR LOS INDEX DEL MAP (YA QUE AL BORRAR SE QUEDA UNO SUELTO)
-
-			out, err := json.Marshal(tarjetas)
-			if err != nil {
-				panic(err)
-			}
-
-			data.Set("username", username)
-			data.Set("cards", encode64(out))
-
-			r, err := client.PostForm(Server+"/cards", data) // enviamos por POST
-			chk(err)
-			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
-			fmt.Println()
-
-			return
-
-		case 5:
-			logged(client, username)
-
-		default:
-			InvalidChoice()
-			manageCards(client, username)
-
+		out, err := json.Marshal(cards)
+		if err != nil {
+			panic(err)
 		}
+
+		data.Set("cmd", "modifyCards")
+		data.Set("username", username)
+		data.Set("cards", encode64(out))
+
+		//Send the data to the server
+		r, err := client.PostForm(Server, data)
+		chk(err)
+
+		//Shows the response's body
+		io.Copy(os.Stdout, r.Body)
+		fmt.Println()
+
+		return
+
+	case 2: //List all cards
+		clearScreen()
+
+		showCards(cards, true)
+
+		return
+
+	case 3: //Edit a card
+		clearScreen()
+
+		if showCards(cards, false) {
+			fmt.Print("\n\nWhich card do you want to edit?: ")
+			var index int
+			fmt.Scanf("%d", &index)
+
+			if index > 0 && index < len(cards)+1 {
+				//Call the form to gather all card's data
+				cd := addCard()
+
+				//Replace the desired card with the newly generated one
+				cards[index] = cd
+
+				out, err := json.Marshal(cards)
+				if err != nil {
+					panic(err)
+				}
+
+				data.Set("cmd", "modifyCards")
+				data.Set("username", username)
+				data.Set("cards", encode64(out))
+
+				//Send the new data to the server so it can be stored
+				r, err := client.PostForm(Server, data)
+				chk(err)
+
+				//Prints the server's response body
+				io.Copy(os.Stdout, r.Body)
+				fmt.Println()
+			} else {
+				fmt.Println(Red("The selected card doesn't exist"))
+
+				time.Sleep(2 * time.Second)
+			}
+		}
+
+		return
+
+	case 4: //Delete a card
+		clearScreen()
+
+		if showCards(cards, false) {
+			fmt.Print("\n\nWhich card do you want to delete?: ")
+			var index int
+			fmt.Scanf("%d", &index)
+
+			if index > 0 && index < len(cards)+1 {
+				//Deletes the selected card from the map
+				delete(cards, index)
+
+				out, err := json.Marshal(cards)
+				if err != nil {
+					panic(err)
+				}
+
+				data.Set("cmd", "modifyCards")
+				data.Set("username", username)
+				data.Set("cards", encode64(out))
+
+				//Send the new data to the server so it can be stored
+				r, err := client.PostForm(Server, data)
+				chk(err)
+
+				//Prints the server's response body
+				io.Copy(os.Stdout, r.Body)
+				fmt.Println()
+			} else {
+				fmt.Println(Red("The selected card doesn't exist"))
+
+				time.Sleep(2 * time.Second)
+			}
+		}
+
+		return
+
+	case 5:
+		logged(client, username)
+
+	default:
+		InvalidChoice()
+		manageCards(client, username)
+
 	}
 }
 
@@ -445,7 +356,7 @@ func manageNotes(client *http.Client, username string) {
 	data.Set("cmd", "getUserNotes") // comando (string)
 	data.Set("username", username)
 
-	r, err := client.PostForm(Server+"/notes", data) // enviamos por POST
+	r, err := client.PostForm(Server, data) // enviamos por POST
 	chk(err)
 
 	//--------- Con esto recojo del servidor las notas y las convierto al struct
@@ -497,7 +408,7 @@ func manageNotes(client *http.Client, username string) {
 			data.Set("username", username)
 			data.Set("notas", encode64(out))
 
-			r, err := client.PostForm(Server+"/notes", data) // enviamos por POST
+			r, err := client.PostForm(Server, data) // enviamos por POST
 			chk(err)
 			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
 			fmt.Println()
@@ -545,7 +456,7 @@ func manageNotes(client *http.Client, username string) {
 			data.Set("username", username)
 			data.Set("notas", encode64(out))
 
-			r, err := client.PostForm(Server+"/notes", data) // enviamos por POST
+			r, err := client.PostForm(Server, data) // enviamos por POST
 			chk(err)
 			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
 			fmt.Println()
@@ -576,7 +487,7 @@ func manageNotes(client *http.Client, username string) {
 			data.Set("username", username)
 			data.Set("notas", encode64(out))
 
-			r, err := client.PostForm(Server+"/notes", data) // enviamos por POST
+			r, err := client.PostForm(Server, data) // enviamos por POST
 			chk(err)
 			io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
 			fmt.Println()

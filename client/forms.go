@@ -1,8 +1,11 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"log"
+	"os"
+	"strings"
 	"time"
 
 	. "github.com/logrusorgru/aurora"
@@ -93,7 +96,7 @@ func addPassword() passwordsData {
 
 		pd.Password = pass
 
-		fmt.Println(Bold(Red("Showing the generated password for")), Underline(Bold(White("5 seconds!"))))
+		fmt.Print(Bold(Red("Showing the generated password for")), Underline(Bold(White("5 seconds!"))), "\n\n")
 		fmt.Println(pd.Password)
 
 		time.Sleep(5 * time.Second)
@@ -103,4 +106,24 @@ func addPassword() passwordsData {
 	}
 
 	return pd
+}
+
+func addCard() cardsData {
+	var cd cardsData
+
+	fmt.Print("Enter the name of the owner: ")
+	in := bufio.NewReader(os.Stdin)
+	line, _ := in.ReadString('\n')
+	cd.Owner = strings.TrimSuffix(line, "\n")
+
+	fmt.Print("Enter the card's identification number (PAN): ")
+	fmt.Scanln(&cd.Pan)
+
+	fmt.Print("Enter the card's secred number (CCV): ")
+	fmt.Scanln(&cd.Ccv)
+
+	fmt.Print("Enther the card's expiry date (E.g. 01/20): ")
+	fmt.Scanln(&cd.Expiry)
+
+	return cd
 }
