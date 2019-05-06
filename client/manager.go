@@ -101,7 +101,7 @@ func managePasswords(client *http.Client, username string) {
 			var index int
 			fmt.Scanf("%d", &index)
 
-			if index > 0 {
+			if passwordIndexExists(index, passwords) {
 				//Call the form to gather all password's data
 				pd := addPassword()
 
@@ -140,7 +140,7 @@ func managePasswords(client *http.Client, username string) {
 			var index int
 			fmt.Scanf("%d", &index)
 
-			if index > 0 {
+			if passwordIndexExists(index, passwords) {
 				//Deletes the selected password from the map
 				delete(passwords, index)
 
@@ -168,7 +168,22 @@ func managePasswords(client *http.Client, username string) {
 
 		return
 
-	case 5:
+	case 5: //Share a password
+		clearScreen()
+
+		if showPasswords(passwords, false) {
+			fmt.Print("\n\nWhich password do you want to share?: ")
+			var index int
+			fmt.Scanf("%d", &index)
+
+			if passwordIndexExists(index, passwords) {
+
+			} else {
+				invalidIndex("password")
+			}
+		}
+
+	case 6: //Go back
 		logged(client, username)
 
 	default:
@@ -269,7 +284,7 @@ func manageCards(client *http.Client, username string) {
 			var index int
 			fmt.Scanf("%d", &index)
 
-			if index > 0 {
+			if cardIndexExists(index, cards) {
 				//Call the form to gather all card's data
 				cd := addCard()
 
@@ -308,7 +323,7 @@ func manageCards(client *http.Client, username string) {
 			var index int
 			fmt.Scanf("%d", &index)
 
-			if index > 0 {
+			if cardIndexExists(index, cards) {
 				//Deletes the selected card from the map
 				delete(cards, index)
 
@@ -336,7 +351,9 @@ func manageCards(client *http.Client, username string) {
 
 		return
 
-	case 5:
+	case 5: //Share a card
+
+	case 6: //Go back
 		logged(client, username)
 
 	default:
@@ -437,7 +454,7 @@ func manageNotes(client *http.Client, username string) {
 			var index int
 			fmt.Scanf("%d", &index)
 
-			if index > 0 {
+			if noteIndexExists(index, notes) {
 				//Call the form to gather all note's data
 				nd := addNote()
 
@@ -476,7 +493,7 @@ func manageNotes(client *http.Client, username string) {
 			var index int
 			fmt.Scanf("%d", &index)
 
-			if index > 0 {
+			if noteIndexExists(index, notes) {
 				//Deletes the selected note from the map
 				delete(notes, index)
 
@@ -504,7 +521,9 @@ func manageNotes(client *http.Client, username string) {
 
 		return
 
-	case 5:
+	case 5: //Share a note
+
+	case 6: //Go back
 		logged(client, username)
 
 	default:

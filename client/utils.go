@@ -90,6 +90,7 @@ func coloredMenu(title string) {
 	fmt.Println(Green("--------------------------\n"))
 }
 
+//Receives the response's body then parses it to JSON and checks the returned Code from the server
 func processResponse(body []byte, m *resp) {
 	//Creates a new JSON decoder
 	dec := json.NewDecoder(strings.NewReader(string(body)))
@@ -109,8 +110,48 @@ func processResponse(body []byte, m *resp) {
 	bufio.NewReader(os.Stdin).ReadBytes('\n')
 }
 
+//An error message printing function
 func invalidIndex(typeOfField string) {
-	fmt.Println(Red("The selected" + typeOfField + " doesn't exist"))
+	fmt.Println(Red("The selected " + typeOfField + " doesn't exist"))
 	fmt.Println("Press any key to continue...")
 	bufio.NewReader(os.Stdin).ReadBytes('\n')
+}
+
+//Checks if the index exists in the given map of passwords
+func passwordIndexExists(index int, array map[int]passwordsData) bool {
+	var exists = false
+
+	for i := range array {
+		if index == i {
+			exists = true
+		}
+	}
+
+	return exists
+}
+
+//Checks if the index exists in the given map of cards
+func cardIndexExists(index int, array map[int]cardsData) bool {
+	var exists = false
+
+	for i := range array {
+		if index == i {
+			exists = true
+		}
+	}
+
+	return exists
+}
+
+//Checks if the index exists in the given map of notes
+func noteIndexExists(index int, array map[int]notesData) bool {
+	var exists = false
+
+	for i := range array {
+		if index == i {
+			exists = true
+		}
+	}
+
+	return exists
 }
