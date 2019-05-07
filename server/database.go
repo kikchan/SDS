@@ -103,6 +103,46 @@ func findUser(username string) (int, string, user) {
 }
 
 /*
+	UPDATE DATA USER' DATA FIELD WITH NEW INFORMATION.
+
+	Returns:
+		1: OK
+	   -1: Error connecting to database
+	   -2: Error executing query
+	   -3: The user doesn't exist
+*/
+func updateDataUser(username string, data string) (int, string) {
+	var msg string
+	var code int
+
+	db, err := sql.Open("mysql", DB_Username+":"+DB_Password+"@"+DB_Protocol+"("+DB_IP+":"+DB_Port+")/"+DB_Name)
+	if err != nil {
+		code = -1
+		msg = err.Error()
+	}
+
+	defer db.Close()
+
+	code, msg, _ = findUser(username)
+
+	if code == 1 {
+		var query = "UPDATE users SET data='" + data + "' WHERE username='" + username + "';"
+
+		update, err := db.Query(query)
+		if err != nil {
+			code = -2
+			msg = err.Error()
+		} else {
+			msg = "Data user modified for username: " + username
+
+			defer update.Close()
+		}
+	}
+
+	return code, msg
+}
+
+/*
 	DELETES AN EXISTING USER GIVEN ITS USERNAME.
 
 	Returns:

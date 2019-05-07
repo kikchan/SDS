@@ -144,3 +144,16 @@ func showNotes(notes map[int]notesData, displayMsg bool) bool {
 
 	return foundAnyNotes
 }
+
+func showUserData(userData userData, username string) {
+	fmt.Println(Red(" USERNAME: "), Red(username))
+	fmt.Println("---------------------------------------------------------------------------")
+
+	fmt.Println(Blue("Name:"), userData.Name)
+	fmt.Println(Blue("Surname:"), userData.Surname)
+	fmt.Println(Blue("Email:"), userData.Email)
+	fmt.Println(Blue("Private key:"), userData.PrivateKey)
+
+	fmt.Print("\nPress any key to continue...")
+	bufio.NewReader(os.Stdin).ReadBytes('\n')
+}

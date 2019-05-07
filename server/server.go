@@ -100,6 +100,30 @@ func handler(w http.ResponseWriter, req *http.Request) {
 			response(w, 0, "The user already exists")
 		}
 
+	case "readUser":
+
+		code, msg, user := findUser(req.Form.Get("username"))
+
+		if code == 1 {
+			response(w, 1, user.Data)
+		} else {
+			response(w, 0, msg)
+		}
+
+		return
+
+	case "updateUser":
+
+		code, msg := updateDataUser(req.Form.Get("username"), req.Form.Get("data"))
+
+		if code == 1 {
+			response(w, 1, msg)
+		} else {
+			response(w, 0, msg)
+		}
+
+		return
+
 	case "deleteUser":
 		//Find the user
 		code, msg, username := findUser(req.Form.Get("username"))

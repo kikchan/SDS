@@ -523,6 +523,36 @@ func userSettings(client *http.Client, username string) {
 	//Response structure
 	var m resp
 
+	//Set the "readUser" command
+	data.Set("cmd", "readUser")
+
+	//Set the username
+	data.Set("username", username)
+
+	//Send the request to the server
+	r, err := client.PostForm(Server, data)
+	chk(err)
+
+	//Retrieve the response's body
+	body, err := ioutil.ReadAll(r.Body)
+
+	//Create a new JSON decoder
+	dec := json.NewDecoder(strings.NewReader(string(body)))
+
+	var usuario userData
+	for {
+		//Decode the server's response
+		if err := dec.Decode(&m); err == io.EOF {
+			break
+		} else if err != nil {
+			log.Fatal(err)
+		}
+
+		//Convert the response to a structure of passwords
+		json.Unmarshal(decode64(m.Msg), &usuario)
+	}
+	//------------------------------------------------------------------------
+
 	//User's choice
 	var option int
 
@@ -530,12 +560,122 @@ func userSettings(client *http.Client, username string) {
 
 	switch option {
 	case 1: //View user data
+		clearScreen()
+
+		showUserData(usuario, username)
+
+		return
 
 	case 2: //Change name
 
+		var newName string
+		fmt.Printf("Enter new name: ")
+		fmt.Scanf("%s", &newName)
+
+		usuario.Name = newName
+
+		//Request structure
+		data := url.Values{}
+
+		//Response structure
+		var m resp
+
+		//Set the "updateUser" command
+		data.Set("cmd", "updateUser")
+
+		out, err := json.Marshal(usuario)
+		if err != nil {
+			panic(err)
+		}
+
+		//Set the username
+		data.Set("username", username)
+		data.Set("data", encode64(out))
+
+		//Send the request to the server
+		r, err := client.PostForm(Server, data)
+		chk(err)
+
+		//Read the body from the response
+		body, _ := ioutil.ReadAll(r.Body)
+
+		processResponse(body, &m)
+
+		return
+
 	case 3: //Change surname
 
+		var newSurname string
+		fmt.Printf("Enter new surname: ")
+		fmt.Scanf("%s", &newSurname)
+
+		usuario.Surname = newSurname
+
+		//Request structure
+		data := url.Values{}
+
+		//Response structure
+		var m resp
+
+		//Set the "updateUser" command
+		data.Set("cmd", "updateUser")
+
+		out, err := json.Marshal(usuario)
+		if err != nil {
+			panic(err)
+		}
+
+		//Set the username
+		data.Set("username", username)
+		data.Set("data", encode64(out))
+
+		//Send the request to the server
+		r, err := client.PostForm(Server, data)
+		chk(err)
+
+		//Read the body from the response
+		body, _ := ioutil.ReadAll(r.Body)
+
+		processResponse(body, &m)
+
+		return
+
 	case 4: //Change email
+
+		var newEmail string
+		fmt.Printf("Enter new email: ")
+		fmt.Scanf("%s", &newEmail)
+
+		usuario.Email = newEmail
+
+		//Request structure
+		data := url.Values{}
+
+		//Response structure
+		var m resp
+
+		//Set the "updateUser" command
+		data.Set("cmd", "updateUser")
+
+		out, err := json.Marshal(usuario)
+		if err != nil {
+			panic(err)
+		}
+
+		//Set the username
+		data.Set("username", username)
+		data.Set("data", encode64(out))
+
+		//Send the request to the server
+		r, err := client.PostForm(Server, data)
+		chk(err)
+
+		//Read the body from the response
+		body, _ := ioutil.ReadAll(r.Body)
+
+		processResponse(body, &m)
+
+		return
 
 	case 5: //Delete account
 		clearScreen()
