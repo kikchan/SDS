@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"math/rand"
 	"strconv"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -20,6 +21,7 @@ import (
 func createUser(user string, password string, pubKey string, hash string, salt string, data string) (int, string) {
 	var msg string
 	var code int
+	var correlation = rand.Intn(10000)
 
 	db, err := sql.Open("mysql", DB_Username+":"+DB_Password+"@"+DB_Protocol+"("+DB_IP+":"+DB_Port+")/"+DB_Name)
 	if err != nil {
@@ -32,6 +34,8 @@ func createUser(user string, password string, pubKey string, hash string, salt s
 	var query = "INSERT INTO users(username, password, publicKey, hash, salt, data) " +
 		"VALUES ('" + user + "', '" + password + "', '" + pubKey + "', '" + hash + "', '" + salt + "', '" + data + "');"
 
+	writeLog("createUser entry", user, correlation, query)
+
 	insert, err := db.Query(query)
 
 	if err != nil {
@@ -43,6 +47,8 @@ func createUser(user string, password string, pubKey string, hash string, salt s
 
 		defer insert.Close()
 	}
+
+	writeLog("createUser out", user, correlation, msg)
 
 	return code, msg
 }
@@ -60,6 +66,7 @@ func findUser(username string) (int, string, user) {
 	var msg string
 	var code int
 	var user user
+	var correlation = rand.Intn(10000)
 
 	db, err := sql.Open("mysql", DB_Username+":"+DB_Password+"@"+DB_Protocol+"("+DB_IP+":"+DB_Port+")/"+DB_Name)
 	if err != nil {
@@ -70,6 +77,8 @@ func findUser(username string) (int, string, user) {
 	defer db.Close()
 
 	var query = "SELECT * FROM users WHERE username='" + username + "';"
+
+	writeLog("findUser entry", username, correlation, query)
 
 	read, err := db.Query(query)
 	if err != nil {
@@ -99,6 +108,8 @@ func findUser(username string) (int, string, user) {
 		msg = "The user \"" + username + "\" doesn't exist"
 	}
 
+	writeLog("findUser out", username, correlation, msg)
+
 	return code, msg, user
 }
 
@@ -114,6 +125,7 @@ func findUser(username string) (int, string, user) {
 func updateDataUser(username string, data string) (int, string) {
 	var msg string
 	var code int
+	var correlation = rand.Intn(10000)
 
 	db, err := sql.Open("mysql", DB_Username+":"+DB_Password+"@"+DB_Protocol+"("+DB_IP+":"+DB_Port+")/"+DB_Name)
 	if err != nil {
@@ -128,6 +140,8 @@ func updateDataUser(username string, data string) (int, string) {
 	if code == 1 {
 		var query = "UPDATE users SET data='" + data + "' WHERE username='" + username + "';"
 
+		writeLog("updateDataUser entry", username, correlation, query)
+
 		update, err := db.Query(query)
 		if err != nil {
 			code = -2
@@ -138,6 +152,8 @@ func updateDataUser(username string, data string) (int, string) {
 			defer update.Close()
 		}
 	}
+
+	writeLog("updateDataUser out", username, correlation, msg)
 
 	return code, msg
 }
@@ -154,6 +170,7 @@ func updateDataUser(username string, data string) (int, string) {
 func deleteUser(username string) (int, string) {
 	var msg string
 	var code int
+	var correlation = rand.Intn(10000)
 
 	db, err := sql.Open("mysql", DB_Username+":"+DB_Password+"@"+DB_Protocol+"("+DB_IP+":"+DB_Port+")/"+DB_Name)
 	if err != nil {
@@ -168,6 +185,8 @@ func deleteUser(username string) (int, string) {
 	if code == 1 {
 		var query = "DELETE FROM users WHERE username='" + username + "';"
 
+		writeLog("deleteUser entry", username, correlation, query)
+
 		delete, err := db.Query(query)
 		if err != nil {
 			code = -2
@@ -178,6 +197,8 @@ func deleteUser(username string) (int, string) {
 			defer delete.Close()
 		}
 	}
+
+	writeLog("deleteUser out", username, correlation, msg)
 
 	return code, msg
 }
@@ -194,6 +215,7 @@ func deleteUser(username string) (int, string) {
 func updatePassword(user string, data string) (int, string) {
 	var msg string
 	var code int
+	var correlation = rand.Intn(10000)
 
 	db, err := sql.Open("mysql", DB_Username+":"+DB_Password+"@"+DB_Protocol+"("+DB_IP+":"+DB_Port+")/"+DB_Name)
 	if err != nil {
@@ -208,6 +230,8 @@ func updatePassword(user string, data string) (int, string) {
 	if code == 1 {
 		var query = "UPDATE passwords SET data='" + data + "' WHERE user='" + user + "';"
 
+		writeLog("updatePassword entry", user, correlation, query)
+
 		update, err := db.Query(query)
 		if err != nil {
 			code = -2
@@ -218,6 +242,8 @@ func updatePassword(user string, data string) (int, string) {
 			defer update.Close()
 		}
 	}
+
+	writeLog("updatePassword out", user, correlation, msg)
 
 	return code, msg
 }
@@ -235,6 +261,7 @@ func updatePassword(user string, data string) (int, string) {
 func getUserPasswords(user string) (int, string) {
 	var msg string
 	var code int
+	var correlation = rand.Intn(10000)
 
 	db, err := sql.Open("mysql", DB_Username+":"+DB_Password+"@"+DB_Protocol+"("+DB_IP+":"+DB_Port+")/"+DB_Name)
 	if err != nil {
@@ -248,6 +275,8 @@ func getUserPasswords(user string) (int, string) {
 
 	if code == 1 {
 		var query = "SELECT data FROM passwords WHERE user='" + user + "';"
+
+		writeLog("getUserPasswords entry", user, correlation, query)
 
 		read, err := db.Query(query)
 		if err != nil {
@@ -270,6 +299,8 @@ func getUserPasswords(user string) (int, string) {
 		}
 	}
 
+	writeLog("getUserPasswords out", user, correlation, msg)
+
 	return code, msg
 }
 
@@ -285,6 +316,7 @@ func getUserPasswords(user string) (int, string) {
 func updateCard(user string, data string) (int, string) {
 	var msg string
 	var code int
+	var correlation = rand.Intn(10000)
 
 	db, err := sql.Open("mysql", DB_Username+":"+DB_Password+"@"+DB_Protocol+"("+DB_IP+":"+DB_Port+")/"+DB_Name)
 	if err != nil {
@@ -299,6 +331,8 @@ func updateCard(user string, data string) (int, string) {
 	if code == 1 {
 		var query = "UPDATE cards SET data='" + data + "' WHERE user='" + user + "';"
 
+		writeLog("updateCard entry", user, correlation, query)
+
 		update, err := db.Query(query)
 		if err != nil {
 			code = -2
@@ -309,6 +343,8 @@ func updateCard(user string, data string) (int, string) {
 			defer update.Close()
 		}
 	}
+
+	writeLog("updateCard out", user, correlation, msg)
 
 	return code, msg
 }
@@ -326,6 +362,7 @@ func updateCard(user string, data string) (int, string) {
 func getUserCards(user string) (int, string) {
 	var msg string
 	var code int
+	var correlation = rand.Intn(10000)
 
 	db, err := sql.Open("mysql", DB_Username+":"+DB_Password+"@"+DB_Protocol+"("+DB_IP+":"+DB_Port+")/"+DB_Name)
 	if err != nil {
@@ -339,6 +376,8 @@ func getUserCards(user string) (int, string) {
 
 	if code == 1 {
 		var query = "SELECT data FROM cards WHERE user='" + user + "';"
+
+		writeLog("getUserCards entry", user, correlation, query)
 
 		read, err := db.Query(query)
 		if err != nil {
@@ -361,6 +400,8 @@ func getUserCards(user string) (int, string) {
 		}
 	}
 
+	writeLog("getUserCards out", user, correlation, msg)
+
 	return code, msg
 }
 
@@ -375,6 +416,7 @@ func getUserCards(user string) (int, string) {
 func updateNote(user string, data string) (int, string) {
 	var msg string
 	var code int
+	var correlation = rand.Intn(10000)
 
 	db, err := sql.Open("mysql", DB_Username+":"+DB_Password+"@"+DB_Protocol+"("+DB_IP+":"+DB_Port+")/"+DB_Name)
 	if err != nil {
@@ -389,6 +431,8 @@ func updateNote(user string, data string) (int, string) {
 	if code == 1 {
 		var query = "UPDATE notes SET data='" + data + "' WHERE user='" + user + "';"
 
+		writeLog("updateNote entry", user, correlation, query)
+
 		update, err := db.Query(query)
 		if err != nil {
 			code = -2
@@ -399,6 +443,8 @@ func updateNote(user string, data string) (int, string) {
 			defer update.Close()
 		}
 	}
+
+	writeLog("updateNote out", user, correlation, msg)
 
 	return code, msg
 }
@@ -416,6 +462,7 @@ func updateNote(user string, data string) (int, string) {
 func getUserNotes(user string) (int, string) {
 	var msg string
 	var code int
+	var correlation = rand.Intn(10000)
 
 	db, err := sql.Open("mysql", DB_Username+":"+DB_Password+"@"+DB_Protocol+"("+DB_IP+":"+DB_Port+")/"+DB_Name)
 	if err != nil {
@@ -429,6 +476,8 @@ func getUserNotes(user string) (int, string) {
 
 	if code == 1 {
 		var query = "SELECT data FROM notes WHERE user='" + user + "';"
+
+		writeLog("getUserNotes entry", user, correlation, query)
 
 		read, err := db.Query(query)
 		if err != nil {
@@ -451,6 +500,8 @@ func getUserNotes(user string) (int, string) {
 		}
 	}
 
+	writeLog("getUserNotes out", user, correlation, msg)
+
 	return code, msg
 }
 
@@ -466,6 +517,7 @@ func getUserNotes(user string) (int, string) {
 func shareField(user string, typeF string, fieldID int, data string, userKey string) (int, string) {
 	var msg string
 	var code int
+	var correlation = rand.Intn(10000)
 
 	db, err := sql.Open("mysql", DB_Username+":"+DB_Password+"@"+DB_Protocol+"("+DB_IP+":"+DB_Port+")/"+DB_Name)
 	if err != nil {
@@ -481,6 +533,8 @@ func shareField(user string, typeF string, fieldID int, data string, userKey str
 		var query = "INSERT INTO shares(user, type, fieldId, data, user_key) " +
 			"VALUES ('" + user + "', '" + typeF + "'," + strconv.Itoa(fieldID) + ", '" + data + "', '" + userKey + "');"
 
+		writeLog("shareField entry", user, correlation, query)
+
 		insert, err := db.Query(query)
 
 		if err != nil {
@@ -493,6 +547,8 @@ func shareField(user string, typeF string, fieldID int, data string, userKey str
 			msg = "Field successfully shared"
 		}
 	}
+
+	writeLog("shareField out", user, correlation, msg)
 
 	return code, msg
 }
@@ -511,6 +567,7 @@ func getSharedFieldForUser(user string, typeF string, fieldID int, userDest stri
 	var msg string
 	var code int
 	var field field
+	var correlation = rand.Intn(10000)
 
 	db, err := sql.Open("mysql", DB_Username+":"+DB_Password+"@"+DB_Protocol+"("+DB_IP+":"+DB_Port+")/"+DB_Name)
 	if err != nil {
@@ -525,6 +582,8 @@ func getSharedFieldForUser(user string, typeF string, fieldID int, userDest stri
 	if code == 1 {
 		var query = "SELECT data, user_key FROM shares WHERE user='" + user + "' AND type='" + typeF +
 			"' AND fieldId=" + strconv.Itoa(fieldID) + " AND user_key LIKE '%" + userDest + "%';"
+
+		writeLog("getSharedFieldForUser entry", user, correlation, query)
 
 		read, err := db.Query(query)
 
@@ -550,6 +609,8 @@ func getSharedFieldForUser(user string, typeF string, fieldID int, userDest stri
 			}
 		}
 	}
+
+	writeLog("getSharedFieldForUser out", user, correlation, msg)
 
 	return code, msg, field
 }
@@ -568,6 +629,7 @@ func getSharedField(user string, typeF string, fieldID int) (int, string, field)
 	var msg string
 	var code int
 	var field field
+	var correlation = rand.Intn(10000)
 
 	db, err := sql.Open("mysql", DB_Username+":"+DB_Password+"@"+DB_Protocol+"("+DB_IP+":"+DB_Port+")/"+DB_Name)
 	if err != nil {
@@ -582,6 +644,8 @@ func getSharedField(user string, typeF string, fieldID int) (int, string, field)
 	if code == 1 {
 		var query = "SELECT data, user_key FROM shares WHERE user='" + user + "' AND type='" + typeF +
 			"' AND fieldId=" + strconv.Itoa(fieldID) + ";"
+
+		writeLog("getSharedField entry", user, correlation, query)
 
 		read, err := db.Query(query)
 
@@ -608,6 +672,8 @@ func getSharedField(user string, typeF string, fieldID int) (int, string, field)
 		}
 	}
 
+	writeLog("getSharedField out", user, correlation, msg)
+
 	return code, msg, field
 }
 
@@ -624,6 +690,7 @@ func getSharedField(user string, typeF string, fieldID int) (int, string, field)
 func updateShareField(user string, typeF string, fieldID int, data string) (int, string) {
 	var msg string
 	var code int
+	var correlation = rand.Intn(10000)
 
 	db, err := sql.Open("mysql", DB_Username+":"+DB_Password+"@"+DB_Protocol+"("+DB_IP+":"+DB_Port+")/"+DB_Name)
 	if err != nil {
@@ -641,6 +708,8 @@ func updateShareField(user string, typeF string, fieldID int, data string) (int,
 		if code == 1 {
 			var query = "UPDATE shares SET data='" + data + "' WHERE user='" + user + "' AND type='" + typeF + "' AND fieldId=" + strconv.Itoa(fieldID) + ";"
 
+			writeLog("updateShareField entry", user, correlation, query)
+
 			delete, err := db.Query(query)
 
 			if err != nil {
@@ -654,6 +723,8 @@ func updateShareField(user string, typeF string, fieldID int, data string) (int,
 			}
 		}
 	}
+
+	writeLog("updateShareField out", user, correlation, msg)
 
 	return code, msg
 }
@@ -671,6 +742,7 @@ func updateShareField(user string, typeF string, fieldID int, data string) (int,
 func deleteShareField(user string, typeF string, fieldID int) (int, string) {
 	var msg string
 	var code int
+	var correlation = rand.Intn(10000)
 
 	db, err := sql.Open("mysql", DB_Username+":"+DB_Password+"@"+DB_Protocol+"("+DB_IP+":"+DB_Port+")/"+DB_Name)
 	if err != nil {
@@ -688,6 +760,8 @@ func deleteShareField(user string, typeF string, fieldID int) (int, string) {
 		if code == 1 {
 			var query = "DELETE FROM shares WHERE user='" + user + "' AND type='" + typeF + "' AND fieldId=" + strconv.Itoa(fieldID) + ";"
 
+			writeLog("deleteShareField entry", user, correlation, query)
+
 			delete, err := db.Query(query)
 
 			if err != nil {
@@ -701,6 +775,8 @@ func deleteShareField(user string, typeF string, fieldID int) (int, string) {
 			}
 		}
 	}
+
+	writeLog("deleteShareField entry", user, correlation, msg)
 
 	return code, msg
 }
