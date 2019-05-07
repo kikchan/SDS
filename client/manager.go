@@ -101,7 +101,7 @@ func managePasswords(client *http.Client, username string) {
 			var index int
 			fmt.Scanf("%d", &index)
 
-			if index > 0 {
+			if passwordIndexExists(index, passwords) {
 				//Call the form to gather all password's data
 				pd := addPassword()
 
@@ -140,7 +140,7 @@ func managePasswords(client *http.Client, username string) {
 			var index int
 			fmt.Scanf("%d", &index)
 
-			if index > 0 {
+			if passwordIndexExists(index, passwords) {
 				//Deletes the selected password from the map
 				delete(passwords, index)
 
@@ -168,7 +168,22 @@ func managePasswords(client *http.Client, username string) {
 
 		return
 
-	case 5:
+	case 5: //Share a password
+		clearScreen()
+
+		if showPasswords(passwords, false) {
+			fmt.Print("\n\nWhich password do you want to share?: ")
+			var index int
+			fmt.Scanf("%d", &index)
+
+			if passwordIndexExists(index, passwords) {
+
+			} else {
+				invalidIndex("password")
+			}
+		}
+
+	case 6: //Go back
 		logged(client, username)
 
 	default:
@@ -269,7 +284,7 @@ func manageCards(client *http.Client, username string) {
 			var index int
 			fmt.Scanf("%d", &index)
 
-			if index > 0 {
+			if cardIndexExists(index, cards) {
 				//Call the form to gather all card's data
 				cd := addCard()
 
@@ -308,7 +323,7 @@ func manageCards(client *http.Client, username string) {
 			var index int
 			fmt.Scanf("%d", &index)
 
-			if index > 0 {
+			if cardIndexExists(index, cards) {
 				//Deletes the selected card from the map
 				delete(cards, index)
 
@@ -336,7 +351,9 @@ func manageCards(client *http.Client, username string) {
 
 		return
 
-	case 5:
+	case 5: //Share a card
+
+	case 6:
 		logged(client, username)
 
 	default:
@@ -437,7 +454,7 @@ func manageNotes(client *http.Client, username string) {
 			var index int
 			fmt.Scanf("%d", &index)
 
-			if index > 0 {
+			if noteIndexExists(index, notes) {
 				//Call the form to gather all note's data
 				nd := addNote()
 
@@ -476,7 +493,7 @@ func manageNotes(client *http.Client, username string) {
 			var index int
 			fmt.Scanf("%d", &index)
 
-			if index > 0 {
+			if noteIndexExists(index, notes) {
 				//Deletes the selected note from the map
 				delete(notes, index)
 
@@ -504,7 +521,9 @@ func manageNotes(client *http.Client, username string) {
 
 		return
 
-	case 5:
+	case 5: //Share a note
+
+	case 6: //Go back
 		logged(client, username)
 
 	default:
@@ -539,7 +558,7 @@ func userSettings(client *http.Client, username string) {
 	//Create a new JSON decoder
 	dec := json.NewDecoder(strings.NewReader(string(body)))
 
-	var usuario userData
+	var user userData
 	for {
 		//Decode the server's response
 		if err := dec.Decode(&m); err == io.EOF {
@@ -549,7 +568,7 @@ func userSettings(client *http.Client, username string) {
 		}
 
 		//Convert the response to a structure of passwords
-		json.Unmarshal(decode64(m.Msg), &usuario)
+		json.Unmarshal(decode64(m.Msg), &user)
 	}
 	//------------------------------------------------------------------------
 
@@ -562,33 +581,25 @@ func userSettings(client *http.Client, username string) {
 	case 1: //View user data
 		clearScreen()
 
-		showUserData(usuario, username)
+		showUserData(user, username)
 
 		return
 
 	case 2: //Change name
+		clearScreen()
 
 		var newName string
 		fmt.Printf("Enter new name: ")
 		fmt.Scanf("%s", &newName)
 
-		usuario.Name = newName
+		user.Name = newName
 
-		//Request structure
-		data := url.Values{}
-
-		//Response structure
-		var m resp
-
-		//Set the "updateUser" command
-		data.Set("cmd", "updateUser")
-
-		out, err := json.Marshal(usuario)
+		out, err := json.Marshal(user)
 		if err != nil {
 			panic(err)
 		}
 
-		//Set the username
+		data.Set("cmd", "updateUser")
 		data.Set("username", username)
 		data.Set("data", encode64(out))
 
@@ -604,28 +615,20 @@ func userSettings(client *http.Client, username string) {
 		return
 
 	case 3: //Change surname
+		clearScreen()
 
 		var newSurname string
 		fmt.Printf("Enter new surname: ")
 		fmt.Scanf("%s", &newSurname)
 
-		usuario.Surname = newSurname
+		user.Surname = newSurname
 
-		//Request structure
-		data := url.Values{}
-
-		//Response structure
-		var m resp
-
-		//Set the "updateUser" command
-		data.Set("cmd", "updateUser")
-
-		out, err := json.Marshal(usuario)
+		out, err := json.Marshal(user)
 		if err != nil {
 			panic(err)
 		}
 
-		//Set the username
+		data.Set("cmd", "updateUser")
 		data.Set("username", username)
 		data.Set("data", encode64(out))
 
@@ -641,28 +644,20 @@ func userSettings(client *http.Client, username string) {
 		return
 
 	case 4: //Change email
+		clearScreen()
 
 		var newEmail string
 		fmt.Printf("Enter new email: ")
 		fmt.Scanf("%s", &newEmail)
 
-		usuario.Email = newEmail
+		user.Email = newEmail
 
-		//Request structure
-		data := url.Values{}
-
-		//Response structure
-		var m resp
-
-		//Set the "updateUser" command
-		data.Set("cmd", "updateUser")
-
-		out, err := json.Marshal(usuario)
+		out, err := json.Marshal(user)
 		if err != nil {
 			panic(err)
 		}
 
-		//Set the username
+		data.Set("cmd", "updateUser")
 		data.Set("username", username)
 		data.Set("data", encode64(out))
 

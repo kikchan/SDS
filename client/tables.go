@@ -146,14 +146,19 @@ func showNotes(notes map[int]notesData, displayMsg bool) bool {
 }
 
 func showUserData(userData userData, username string) {
-	fmt.Println(Red(" USERNAME: "), Red(username))
-	fmt.Println("---------------------------------------------------------------------------")
+	var choice string
 
-	fmt.Println(Blue("Name:"), userData.Name)
+	fmt.Println(Blue("Name:\t"), userData.Name)
 	fmt.Println(Blue("Surname:"), userData.Surname)
-	fmt.Println(Blue("Email:"), userData.Email)
-	fmt.Println(Blue("Private key:"), userData.PrivateKey)
+	fmt.Println(Blue("Email:\t"), userData.Email)
 
-	fmt.Print("\nPress any key to continue...")
-	bufio.NewReader(os.Stdin).ReadBytes('\n')
+	fmt.Print("\nDo you want to see the private key? (y/n): ")
+	fmt.Scanln(&choice)
+
+	if choice == "y" {
+		fmt.Println(Blue("Private key:\n"), userData.PrivateKey)
+
+		fmt.Print("\nPress any key to continue...")
+		bufio.NewReader(os.Stdin).ReadBytes('\n')
+	}
 }

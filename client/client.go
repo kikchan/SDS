@@ -107,6 +107,8 @@ func publicMenu(client *http.Client) {
 
 	switch option {
 	case 1:
+		clearScreen()
+
 		var username string
 		var password string
 
@@ -155,6 +157,8 @@ func publicMenu(client *http.Client) {
 		}
 
 	case 2:
+		clearScreen()
+
 		var username string
 		var password string
 		var name string

@@ -43,7 +43,8 @@ func menuMngPasswords(option *int) {
 			"[ 2 ] Show passwords\n" +
 			"[ 3 ] Edit a password\n" +
 			"[ 4 ] Delete a password\n" +
-			"[ 5 ] Go back\n" +
+			"[ 5 ] Share a password\n" +
+			"[ 6 ] Go back\n" +
 			"Choice: "
 
 	fmt.Print(menuMngPasswords)
@@ -58,7 +59,8 @@ func menuMngCards(option *int) {
 			"[ 2 ] Show cards\n" +
 			"[ 3 ] Edit a card\n" +
 			"[ 4 ] Delete a card\n" +
-			"[ 5 ] Go back\n" +
+			"[ 5 ] Share a card\n" +
+			"[ 6 ] Go back\n" +
 			"Choice: "
 
 	fmt.Print(menuMngCards)
@@ -73,7 +75,8 @@ func menuMngNotes(option *int) {
 			"[ 2 ] Show notes\n" +
 			"[ 3 ] Edit a note\n" +
 			"[ 4 ] Delete a note\n" +
-			"[ 5 ] Go back\n" +
+			"[ 5 ] Share a note\n" +
+			"[ 6 ] Go back\n" +
 			"Choice: "
 
 	fmt.Print(menuMngNotes)
