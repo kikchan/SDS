@@ -6,6 +6,7 @@ type passwordsData struct {
 	Password string
 	Modified string
 	Site     string
+	AES      string
 }
 
 //User card structure

@@ -48,8 +48,31 @@ func encrypt(data, key []byte) (out []byte) {
 	chk(err)                            //Check if there's any error
 	ctr := cipher.NewCTR(blk, out[:16]) //Cipher using CTR
 	ctr.XORKeyStream(out[16:], data)    //Encrypt the data
+
 	return
 }
+
+// ------------------- NOT TESTED --------------------- !//
+//Generates a random AES key with a size of 32 bytes
+func generateAESkey() string {
+	key := make([]byte, 32)
+	rand.Read(key)
+	return fmt.Sprintf("%x", key)
+}
+
+//Decrypts the given data using the key
+func decrypt(text, key []byte) (data []byte) {
+	block, _ := aes.NewCipher(key)
+	iv := text[:aes.BlockSize]
+	text = text[aes.BlockSize:]
+	cfb := cipher.NewCFBDecrypter(block, iv)
+	cfb.XORKeyStream(text, text)
+	data, _ = base64.StdEncoding.DecodeString(string(text))
+
+	return
+}
+
+// -----------------END NOT TESTED ----------------------- !//
 
 //Compress the given data
 func compress(data []byte) []byte {
@@ -57,7 +80,7 @@ func compress(data []byte) []byte {
 	w := zlib.NewWriter(&b) //Creates a writer to compress on b
 	w.Write(data)           //Write data
 	w.Close()               //Close the writter
-	return b.Bytes()        // devolvemos los datos comprimidos
+	return b.Bytes()
 }
 
 //Convert from []byte to string
