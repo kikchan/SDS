@@ -4,7 +4,6 @@ package main
 type user struct {
 	ID       int
 	Username string
-	Password string
 	PubKey   string
 	Hash     []byte
 	Salt     []byte

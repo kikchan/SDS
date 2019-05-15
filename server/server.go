@@ -79,7 +79,6 @@ func handler(w http.ResponseWriter, req *http.Request) {
 			u := user{}
 			u.Username = req.Form.Get("user")
 			u.Data = req.Form.Get("userData")
-			u.Password = req.Form.Get("pass")
 			u.PubKey = req.Form.Get("pubkey")
 
 			//Make a 128 bits Salt
