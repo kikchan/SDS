@@ -18,7 +18,7 @@ import (
 	   -1: Error connecting to database
 	   -2: Error executing query
 */
-func createUser(user string, password string, pubKey string, hash string, salt string, data string) (int, string) {
+func createUser(user string, pubKey string, hash string, salt string, data string) (int, string) {
 	var msg string
 	var code int
 	var correlation = rand.Intn(10000)
@@ -31,8 +31,8 @@ func createUser(user string, password string, pubKey string, hash string, salt s
 
 	defer db.Close()
 
-	var query = "INSERT INTO users(username, password, publicKey, hash, salt, data) " +
-		"VALUES ('" + user + "', '" + password + "', '" + pubKey + "', '" + hash + "', '" + salt + "', '" + data + "');"
+	var query = "INSERT INTO users(username, publicKey, hash, salt, data) " +
+		"VALUES ('" + user + "', '" + pubKey + "', '" + hash + "', '" + salt + "', '" + data + "');"
 
 	writeLog("createUser entry", user, correlation, query)
 
@@ -90,15 +90,14 @@ func findUser(username string) (int, string, user) {
 
 	if read.Next() {
 		var a int
-		var b, c, d, e, f, g string
+		var b, d, e, f, g string
 
-		err = read.Scan(&a, &b, &c, &d, &e, &f, &g)
+		err = read.Scan(&a, &b, &d, &e, &f, &g)
 
 		code = 1
 		msg = "Found user: " + username
 		user.ID = a
 		user.Username = b
-		user.Password = c
 		user.PubKey = d
 		user.Hash = decode64(e)
 		user.Salt = decode64(f)

@@ -93,7 +93,7 @@ func handler(w http.ResponseWriter, req *http.Request) {
 			u.Hash, _ = scrypt.Key(password, u.Salt, 16384, 8, 1, 32)
 
 			//Save the new user to the database with his public key, data, salt and hash
-			code, msg = createUser(u.Username, u.Password, u.PubKey, encode64(u.Hash), encode64(u.Salt), u.Data)
+			code, msg = createUser(u.Username, u.PubKey, encode64(u.Hash), encode64(u.Salt), u.Data)
 
 			response(w, code, msg)
 		} else {
