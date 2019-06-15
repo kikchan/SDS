@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -8,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 )
 
@@ -187,7 +189,15 @@ func managePasswords(client *http.Client, username string) {
 				//Read the body from the response
 				body, _ := ioutil.ReadAll(r.Body)
 
-				processResponse(body, &m)
+				//Convert the response to an array of users
+				users := convertResponseToArrayOfUsers(body, &m)
+
+				//List all the users and ask which one will get the shared field
+				selectedUser := listUsers(users)
+
+				fmt.Println(users[selectedUser].Username)
+
+				bufio.NewReader(os.Stdin).ReadBytes('\n')
 			} else {
 				invalidIndex("password")
 			}

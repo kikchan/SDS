@@ -38,6 +38,7 @@ type user struct {
 	Hash     []byte
 	Salt     []byte
 	Data     map[string]string
+	PubKey   string
 }
 
 //Server's response

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -158,4 +159,16 @@ func deleteUser() bool {
 	}
 
 	return deleted
+}
+
+func listUsers(users []user) int {
+	for i, element := range users {
+		fmt.Println("[" + strconv.Itoa(i+1) + "] " + element.Username)
+	}
+
+	fmt.Print("Choose a user to share with: ")
+	var index int
+	fmt.Scanf("%d", &index)
+
+	return index - 1
 }

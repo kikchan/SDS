@@ -133,6 +133,34 @@ func processResponse(body []byte, m *resp) {
 	bufio.NewReader(os.Stdin).ReadBytes('\n')
 }
 
+//Receives the response's body then parses it to JSON then returns it as an array
+func convertResponseToArrayOfUsers(body []byte, m *resp) []user {
+	//Creates a new JSON decoder
+	dec := json.NewDecoder(strings.NewReader(string(body)))
+
+	//Convert the body to a json structure
+	dec.Decode(&m)
+
+	//Array of users
+	var users []user
+
+	//Array of users splitted
+	arrayOfUsers := strings.Split(m.Msg, "###")
+
+	for i := range arrayOfUsers {
+		//Each user's data gets splitted in another array of 2 columns
+		arrayOfUserData := strings.Split(arrayOfUsers[i], "##")
+
+		var user user
+		user.Username = arrayOfUserData[0]
+		user.PubKey = arrayOfUserData[1]
+
+		users = append(users, user)
+	}
+
+	return users
+}
+
 //An error message printing function
 func invalidIndex(typeOfField string) {
 	fmt.Println(Red("The selected " + typeOfField + " doesn't exist"))
