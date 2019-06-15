@@ -198,6 +198,29 @@ func handler(w http.ResponseWriter, req *http.Request) {
 
 		return
 
+	case "showAvailableUsers":
+		//Store in a variable the username and notes to modify
+		username := req.Form.Get("username")
+
+		//Query the database to update the notes
+		code, msg, users := getAllUsersExceptTheGivenOne(username)
+
+		if len(users) > 0 {
+			msg = ""
+
+			for i, element := range users {
+				msg += element.Username + "##" + element.PubKey
+
+				if i != len(users)-1 {
+					msg += "###"
+				}
+			}
+		}
+
+		response(w, code, msg)
+
+		return
+
 	case "open":
 		response(w, 1, "Connection established!")
 

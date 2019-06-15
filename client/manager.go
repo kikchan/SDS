@@ -177,7 +177,17 @@ func managePasswords(client *http.Client, username string) {
 			fmt.Scanf("%d", &index)
 
 			if passwordIndexExists(index, passwords) {
+				data.Set("cmd", "showAvailableUsers")
+				data.Set("username", username)
 
+				//Send the new data to the server so it can be stored
+				r, err := client.PostForm(Server, data)
+				chk(err)
+
+				//Read the body from the response
+				body, _ := ioutil.ReadAll(r.Body)
+
+				processResponse(body, &m)
 			} else {
 				invalidIndex("password")
 			}
