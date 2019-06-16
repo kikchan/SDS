@@ -221,6 +221,21 @@ func handler(w http.ResponseWriter, req *http.Request) {
 
 		return
 
+	case "shareField":
+		username := req.Form.Get("username")
+		typeField := req.Form.Get("type")
+		field := req.Form.Get("field")
+		data := req.Form.Get("data")
+		userTarget := req.Form.Get("userTarget")
+		userKey := req.Form.Get("userKey")
+
+		//Insert the shared field into the database
+		code, msg := shareField(username, typeField, field, data, userTarget, userKey)
+
+		response(w, code, msg)
+
+		return
+
 	case "open":
 		response(w, 1, "Connection established!")
 

@@ -3,6 +3,8 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"crypto/rand"
+	"crypto/rsa"
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
@@ -12,6 +14,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -67,6 +70,9 @@ func managePasswords(client *http.Client, username string) {
 
 		//Call the form to gather all the password data
 		pd := addPassword()
+
+		//Assign the latest password ID to the current one
+		pd.ID = len(passwords) + 1
 
 		//Insert the new password into the map
 		passwords[len(passwords)+1] = pd
@@ -182,10 +188,10 @@ func managePasswords(client *http.Client, username string) {
 
 		if showPasswords(passwords, false) {
 			fmt.Print("\n\nWhich password do you want to share?: ")
-			var index int
-			fmt.Scanf("%d", &index)
+			var selectedField int
+			fmt.Scanf("%d", &selectedField)
 
-			if passwordIndexExists(index, passwords) {
+			if passwordIndexExists(selectedField, passwords) {
 				data.Set("cmd", "showAvailableUsers")
 				data.Set("username", username)
 
@@ -202,41 +208,41 @@ func managePasswords(client *http.Client, username string) {
 				//List all the users and ask which one will get the shared data
 				selectedUser := listUsers(users)
 
-				fmt.Println(users[selectedUser].Username)
-				fmt.Println(passwords[index])
-
 				//Convert the password struct to []byte
-				err = enc.Encode(passwords[index])
+				err = enc.Encode(passwords[selectedField])
 				chk(err)
 
-				//Read the []byte from the network interface and encrypt it using the AES key transformed into []byte
-				encryptedPassword := encrypt(network.Bytes(), decode64(passwords[index].AES))
+				//Encrypt the field using the AES key
+				encryptedField := encrypt(network.Bytes(), decode64(passwords[selectedField].AES))
 
-				fmt.Println("Encrypted struct as string:")
-				fmt.Println(encode64(encryptedPassword))
+				//Convert the selected user's public key to rsa.PublicKey type
+				var publicKey rsa.PublicKey
+				err = json.Unmarshal(uncompress(decode64(users[selectedUser].PubKey)), &publicKey)
 
-				/*
-					Jose, hasta aquí se comprime la estructura de la contraseña con su clave AES y se convierte en
-					cadena que se imprime por pantalla.
+				//Encrypt the AES key using the user's public key
+				encryptedAESkey, err := rsa.EncryptPKCS1v15(rand.Reader, &publicKey, decode64(passwords[selectedField].AES))
+				chk(err)
 
-					Lo que trato de hacer a partir de estas líneas es encriptar la clave AES que a su vez ha cifrado
-					la estructura de la contraseña con la clave pública del usuario.
+				data.Set("cmd", "shareField")
+				data.Set("username", username)
+				data.Set("type", "pass")
+				data.Set("field", strconv.Itoa(passwords[selectedField].ID))
+				data.Set("data", encode64(encryptedField))
+				data.Set("userTarget", users[selectedUser].Username)
+				data.Set("userKey", encode64(encryptedAESkey))
 
-					Lo que aparece a partir del comentario "To do on other side" se usa para desencriptar la estructura
-					de la contraseña usando la clave AES. NO lo borres porque me hará falta para mostrar la contraseña.
+				//Send the data to the server so he can store it
+				r, err = client.PostForm(Server, data)
+				chk(err)
 
-					Lo que estaría de puta madre sería que mirases cómo encriptar usando la clave pública de un usuario
-					y cómo desencriptar usando su clave privada.
-				*/
+				//Read the body from the response
+				body, _ = ioutil.ReadAll(r.Body)
 
-				//rsa.EncryptOAEP(sha256.New(), rand.Reader, rsa. decode64(users[selectedUser].PubKey),
-				//	decode64(passwords[index].AES))
-
-				encryptedAESkey := encrypt(decode64(passwords[index].AES), decode64(users[selectedUser].PubKey))
-				fmt.Println(encryptedAESkey)
+				//Read the response from the server
+				processResponse(body, &m)
 
 				//To do on other side
-				datoDec := decrypt(encryptedPassword, decode64(passwords[index].AES))
+				datoDec := decrypt(encryptedField, decode64(passwords[selectedField].AES))
 				fmt.Println(datoDec)
 
 				var pd passwordsData

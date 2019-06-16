@@ -2,6 +2,7 @@ package main
 
 //User password structure
 type passwordsData struct {
+	ID       int
 	Username string
 	Password string
 	Modified string

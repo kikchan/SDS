@@ -580,7 +580,7 @@ func getAllUsersExceptTheGivenOne(username string) (int, string, []user) {
 	   -2: Error executing query
 	   -3: The user doesn't exist
 */
-func shareField(user, typeF string, fieldID int, data, userTarget, userKey string) (int, string) {
+func shareField(user, typeF, fieldID, data, userTarget, userKey string) (int, string) {
 	var msg string
 	var code int
 	var correlation = rand.Intn(10000)
@@ -597,7 +597,7 @@ func shareField(user, typeF string, fieldID int, data, userTarget, userKey strin
 
 	if code == 1 {
 		var query = "INSERT INTO shares(user, type, fieldId, data, user_target, user_key) " +
-			"VALUES ('" + user + "', '" + typeF + "'," + strconv.Itoa(fieldID) + ", '" + data + "', '" + userTarget + "', '" + userKey + "');"
+			"VALUES ('" + user + "', '" + typeF + "'," + fieldID + ", '" + data + "', '" + userTarget + "', '" + userKey + "');"
 
 		writeLog("shareField entry", user, correlation, query)
 

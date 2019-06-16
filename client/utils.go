@@ -10,6 +10,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"os"
@@ -78,6 +79,16 @@ func compress(data []byte) []byte {
 	w := zlib.NewWriter(&b) //Creates a writer to compress on b
 	w.Write(data)           //Write data
 	w.Close()               //Close the writter
+	return b.Bytes()
+}
+
+//Uncompress the given data
+func uncompress(data []byte) []byte {
+	var b bytes.Buffer                              //Contains the uncompressed data
+	r, err := zlib.NewReader(bytes.NewReader(data)) //A reader that uncompresses
+	chk(err)                                        //Check if there's any error
+	io.Copy(&b, r)                                  //Copy form the reader to the variable
+	r.Close()                                       //Closes the reader
 	return b.Bytes()
 }
 

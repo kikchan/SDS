@@ -171,7 +171,7 @@ func publicMenu(client *http.Client) {
 		pkClient, err := rsa.GenerateKey(rand.Reader, 1024)
 		chk(err)
 
-		//Accelerate its the time required for computing it
+		//Speeds up future operations
 		pkClient.Precompute()
 
 		//Parse the keys to a JSON structure
