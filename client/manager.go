@@ -2,6 +2,8 @@ package main
 
 import (
 	"bufio"
+	"bytes"
+	"encoding/gob"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -192,10 +194,33 @@ func managePasswords(client *http.Client, username string) {
 				//Convert the response to an array of users
 				users := convertResponseToArrayOfUsers(body, &m)
 
-				//List all the users and ask which one will get the shared field
+				//List all the users and ask which one will get the shared data
 				selectedUser := listUsers(users)
 
 				fmt.Println(users[selectedUser].Username)
+				fmt.Println(passwords[index])
+
+				var network bytes.Buffer
+				enc := gob.NewEncoder(&network)
+				dec := gob.NewDecoder(&network)
+
+				chk(enc.Encode(passwords[index]))
+
+				//chk(dec.Decode(network.Bytes()))
+				//fmt.Println(network.)
+
+				dato := encrypt(network.Bytes(), decode64(passwords[index].AES))
+				fmt.Println(dato)
+
+				datoCadena := encode64(dato)
+				fmt.Println(datoCadena)
+
+				datoDec := decrypt(dato, decode64(passwords[index].AES))
+				fmt.Println(datoDec)
+
+				var pd passwordsData
+				chk(dec.Decode(&pd))
+				fmt.Println(pd)
 
 				bufio.NewReader(os.Stdin).ReadBytes('\n')
 			} else {

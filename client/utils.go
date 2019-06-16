@@ -52,12 +52,12 @@ func encrypt(data, key []byte) (out []byte) {
 	return
 }
 
-// ------------------- NOT TESTED --------------------- !//
 //Generates a random AES key with a size of 32 bytes
-func generateAESkey() string {
+func generateAESkey() []byte {
 	key := make([]byte, 32)
 	rand.Read(key)
-	return fmt.Sprintf("%x", key)
+
+	return key
 }
 
 //Decrypts the given data using the key
@@ -71,8 +71,6 @@ func decrypt(text, key []byte) (data []byte) {
 
 	return
 }
-
-// -----------------END NOT TESTED ----------------------- !//
 
 //Compress the given data
 func compress(data []byte) []byte {

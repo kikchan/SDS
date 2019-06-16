@@ -49,7 +49,7 @@ func addPassword() passwordsData {
 	var random string
 
 	pd.Modified = time.Now().Format("2006-01-02 15:04:05")
-	pd.AES = generateAESkey()
+	pd.AES = encode64(generateAESkey())
 
 	fmt.Print("Enter the URL of the password's site: ")
 	fmt.Scanln(&pd.Site)
