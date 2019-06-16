@@ -100,7 +100,7 @@ func handler(w http.ResponseWriter, req *http.Request) {
 		}
 
 	case "readUser":
-
+		//Find the user
 		code, msg, user := findUser(req.Form.Get("username"))
 
 		if code == 1 {
@@ -112,7 +112,7 @@ func handler(w http.ResponseWriter, req *http.Request) {
 		return
 
 	case "updateUser":
-
+		//Update user's data
 		code, msg := updateDataUser(req.Form.Get("username"), req.Form.Get("data"))
 
 		if code == 1 {

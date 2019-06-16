@@ -175,6 +175,11 @@ func managePasswords(client *http.Client, username string) {
 	case 5: //Share a password
 		clearScreen()
 
+		//A struct to []byte encoder/decoder
+		var network bytes.Buffer
+		enc := gob.NewEncoder(&network)
+		dec := gob.NewDecoder(&network)
+
 		if showPasswords(passwords, false) {
 			fmt.Print("\n\nWhich password do you want to share?: ")
 			var index int
@@ -200,22 +205,38 @@ func managePasswords(client *http.Client, username string) {
 				fmt.Println(users[selectedUser].Username)
 				fmt.Println(passwords[index])
 
-				var network bytes.Buffer
-				enc := gob.NewEncoder(&network)
-				dec := gob.NewDecoder(&network)
+				//Convert the password struct to []byte
+				err = enc.Encode(passwords[index])
+				chk(err)
 
-				chk(enc.Encode(passwords[index]))
+				//Read the []byte from the network interface and encrypt it using the AES key transformed into []byte
+				encryptedPassword := encrypt(network.Bytes(), decode64(passwords[index].AES))
 
-				//chk(dec.Decode(network.Bytes()))
-				//fmt.Println(network.)
+				fmt.Println("Encrypted struct as string:")
+				fmt.Println(encode64(encryptedPassword))
 
-				dato := encrypt(network.Bytes(), decode64(passwords[index].AES))
-				fmt.Println(dato)
+				/*
+					Jose, hasta aquí se comprime la estructura de la contraseña con su clave AES y se convierte en
+					cadena que se imprime por pantalla.
 
-				datoCadena := encode64(dato)
-				fmt.Println(datoCadena)
+					Lo que trato de hacer a partir de estas líneas es encriptar la clave AES que a su vez ha cifrado
+					la estructura de la contraseña con la clave pública del usuario.
 
-				datoDec := decrypt(dato, decode64(passwords[index].AES))
+					Lo que aparece a partir del comentario "To do on other side" se usa para desencriptar la estructura
+					de la contraseña usando la clave AES. NO lo borres porque me hará falta para mostrar la contraseña.
+
+					Lo que estaría de puta madre sería que mirases cómo encriptar usando la clave pública de un usuario
+					y cómo desencriptar usando su clave privada.
+				*/
+
+				//rsa.EncryptOAEP(sha256.New(), rand.Reader, rsa. decode64(users[selectedUser].PubKey),
+				//	decode64(passwords[index].AES))
+
+				encryptedAESkey := encrypt(decode64(passwords[index].AES), decode64(users[selectedUser].PubKey))
+				fmt.Println(encryptedAESkey)
+
+				//To do on other side
+				datoDec := decrypt(encryptedPassword, decode64(passwords[index].AES))
 				fmt.Println(datoDec)
 
 				var pd passwordsData
