@@ -236,6 +236,28 @@ func handler(w http.ResponseWriter, req *http.Request) {
 
 		return
 
+	case "getSharedFields":
+		username := req.Form.Get("username")
+		typeF := req.Form.Get("type")
+
+		code, msg, fields := getSharedFieldsForUser(username, typeF)
+
+		if len(fields) > 0 {
+			msg = ""
+
+			for i, element := range fields {
+				msg += element.Data + "##" + element.UserKey
+
+				if i != len(fields)-1 {
+					msg += "###"
+				}
+			}
+		}
+
+		response(w, code, msg)
+
+		return
+
 	case "open":
 		response(w, 1, "Connection established!")
 

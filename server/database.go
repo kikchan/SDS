@@ -567,10 +567,6 @@ func getAllUsersExceptTheGivenOne(username string) (int, string, []user) {
 	return code, msg, users
 }
 
-/***********************************************************************************
-/***************************	PARA REVISAR	************************************
-/***********************************************************************************
-
 /*
 	SHARES AN ENCRYPTED FIELD WITH A NUMBER OF USERS.
 
@@ -619,6 +615,10 @@ func shareField(user, typeF, fieldID, data, userTarget, userKey string) (int, st
 	return code, msg
 }
 
+/***********************************************************************************
+/***************************	PARA REVISAR	************************************
+/***********************************************************************************
+
 /*
 	RETREIVES A SHARED FIELD FOR A GIVEN USER.
 
@@ -627,12 +627,12 @@ func shareField(user, typeF, fieldID, data, userTarget, userKey string) (int, st
 	   -1: Error connecting to database
 	   -2: Error executing query
 	   -3: The user doesn't exist
-	   -7: The field doesn't exist
+	   -9: No fields were found
 */
-func getSharedFieldForUser(user string, typeF string, fieldID int, userDest string) (int, string, field) {
+func getSharedFieldsForUser(user string, typeF string) (int, string, []field) {
 	var msg string
 	var code int
-	var field field
+	var fields []field
 	var correlation = rand.Intn(10000)
 
 	db, err := sql.Open("mysql", DB_Username+":"+DB_Password+"@"+DB_Protocol+"("+DB_IP+":"+DB_Port+")/"+DB_Name)
@@ -646,10 +646,9 @@ func getSharedFieldForUser(user string, typeF string, fieldID int, userDest stri
 	code, msg, _ = findUser(user)
 
 	if code == 1 {
-		var query = "SELECT data, user_key FROM shares WHERE user='" + user + "' AND type='" + typeF +
-			"' AND fieldId=" + strconv.Itoa(fieldID) + " AND user_key LIKE '%" + userDest + "%';"
+		var query = "SELECT `data`, user_key FROM shares WHERE user_target='" + user + "' AND type='" + typeF + "';"
 
-		writeLog("getSharedFieldForUser entry", user, correlation, query)
+		writeLog("getSharedFieldsForUser entry", user, correlation, query)
 
 		read, err := db.Query(query)
 
@@ -659,26 +658,29 @@ func getSharedFieldForUser(user string, typeF string, fieldID int, userDest stri
 		} else {
 			defer read.Close()
 
-			if read.Next() {
+			code = -9
+			msg = "No fields were found"
+
+			for read.Next() {
 				var a, b string
+				var field field
 
 				err = read.Scan(&a, &b)
 
 				code = 1
-				msg = "The requested field was found"
+				msg = "Retrieved fields for user: \"" + user + "\""
 
 				field.Data = a
 				field.UserKey = b
-			} else {
-				code = -7
-				msg = "The field doesn't exist"
+
+				fields = append(fields, field)
 			}
 		}
 	}
 
-	writeLog("getSharedFieldForUser out", user, correlation, msg)
+	writeLog("getSharedFieldsForUser out", user, correlation, msg)
 
-	return code, msg, field
+	return code, msg, fields
 }
 
 /*

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
 	"crypto/rand"
 	"crypto/rsa"
@@ -13,7 +12,6 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"os"
 	"strconv"
 	"strings"
 )
@@ -101,6 +99,58 @@ func managePasswords(client *http.Client, username string) {
 
 		showPasswords(passwords, true)
 
+		/*
+			GET THE USER'S PRIVATE KEY
+		*/
+		//Request structure
+		data := url.Values{}
+
+		//Set the "readUser" command
+		data.Set("cmd", "readUser")
+
+		//Set the username
+		data.Set("username", username)
+
+		//Send the request to the server
+		r, err = client.PostForm(Server, data)
+		chk(err)
+
+		//Retrieve the response's body
+		body, err = ioutil.ReadAll(r.Body)
+
+		//Create a new JSON decoder
+		dec := json.NewDecoder(strings.NewReader(string(body)))
+
+		var user userData
+		for {
+			//Decode the server's response
+			if err := dec.Decode(&m); err == io.EOF {
+				break
+			} else if err != nil {
+				log.Fatal(err)
+			}
+
+			//Convert the response to a structure of passwords
+			json.Unmarshal(decode64(m.Msg), &user)
+		}
+		//------------------------------------------------------------------------
+
+		data.Set("cmd", "getSharedFields")
+		data.Set("username", username)
+		data.Set("type", "pass")
+
+		//Send the new data to the server so it can be stored
+		r, err := client.PostForm(Server, data)
+		chk(err)
+
+		//Read the body from the response
+		body, _ := ioutil.ReadAll(r.Body)
+
+		//Convert the response to an array of passwords
+		fields := decryptResponseToArrayOfPasswords(body, &m, user.PrivateKey)
+
+		showSharedPasswords(fields, true)
+
 		return
 
 	case 3: //Edit a password
@@ -184,7 +234,6 @@ func managePasswords(client *http.Client, username string) {
 		//A struct to []byte encoder/decoder
 		var network bytes.Buffer
 		enc := gob.NewEncoder(&network)
-		dec := gob.NewDecoder(&network)
 
 		if showPasswords(passwords, false) {
 			fmt.Print("\n\nWhich password do you want to share?: ")
@@ -240,16 +289,6 @@ func managePasswords(client *http.Client, username string) {
 
 				//Read the response from the server
 				processResponse(body, &m)
-
-				//To do on other side
-				datoDec := decrypt(encryptedField, decode64(passwords[selectedField].AES))
-				fmt.Println(datoDec)
-
-				var pd passwordsData
-				chk(dec.Decode(&pd))
-				fmt.Println(pd)
-
-				bufio.NewReader(os.Stdin).ReadBytes('\n')
 			} else {
 				invalidIndex("password")
 			}

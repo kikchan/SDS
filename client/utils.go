@@ -7,6 +7,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
+	"crypto/rsa"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -168,6 +169,52 @@ func convertResponseToArrayOfUsers(body []byte, m *resp) []user {
 	}
 
 	return users
+}
+
+//Receives the response's body then parses it to JSON then returns it as an array
+func decryptResponseToArrayOfPasswords(body []byte, m *resp, pKey string) []passwordsData {
+	//A struct to []byte encoder/decoder
+	//var network bytes.Buffer
+	//dec := gob.NewDecoder(&network)
+
+	//Creates a new JSON decoder
+	dec := json.NewDecoder(strings.NewReader(string(body)))
+
+	//Convert the body to a json structure
+	dec.Decode(&m)
+
+	//Array of passwords
+	var passwords []passwordsData
+
+	//Array of passwords splitted
+	arrayOfPasswords := strings.Split(m.Msg, "###")
+
+	for i := range arrayOfPasswords {
+		//Each password's data gets splitted in another array of 2 columns
+		passStruct := strings.Split(arrayOfPasswords[i], "##")
+
+		//ALGO PETA DENTRO DEL FOR PORQUE NO DEVUELVE BIEN EL ARRAY
+
+		//To do on other side
+		var privateKey rsa.PrivateKey
+
+		err := json.Unmarshal(uncompress(decode64(pKey)), &privateKey)
+		chk(err)
+
+		AESkey, err := rsa.DecryptPKCS1v15(rand.Reader, &privateKey, decode64(passStruct[0]))
+		chk(err)
+
+		fmt.Println(AESkey)
+		time.Sleep(5 * time.Minute)
+
+		var pd passwordsData
+		chk(dec.Decode(&pd))
+		fmt.Println(pd)
+
+		passwords = append(passwords, pd)
+	}
+
+	return passwords
 }
 
 //An error message printing function

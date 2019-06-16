@@ -66,6 +66,54 @@ func showPasswords(passwords map[int]passwordsData, displayPass bool) bool {
 	return foundAnyPasswords
 }
 
+func showSharedPasswords(passwords []passwordsData, displayPass bool) {
+	if len(passwords) > 0 {
+		if displayPass {
+			fmt.Print(Bold(Red("Showing SHARED passwords for")), Underline(Bold(White("5 seconds!"))), "\n\n")
+			fmt.Println(" #\t | Site\t\t| Username\t| Password\t| Last modified")
+			fmt.Println("-----------------------------------------------------------------------------")
+		} else {
+			fmt.Println(" #\t | Site\t\t| Username\t| Last modified")
+			fmt.Println("-------------------------------------------------------------")
+		}
+
+		for k, v := range passwords {
+			fmt.Print("[" + strconv.Itoa(k) + "]\t | ")
+
+			if len(v.Site) >= 5 {
+				fmt.Print(Blue(v.Site), "\t| ")
+			} else {
+				fmt.Print(Blue(v.Site), "\t\t| ")
+			}
+
+			if len(v.Username) >= 6 {
+				fmt.Print(Bold(Green(v.Username)), "\t| ")
+			} else {
+				fmt.Print(Bold(Green(v.Username)), "\t\t| ")
+			}
+
+			if displayPass {
+				if len(v.Password) >= 6 {
+					fmt.Print(Bold(Red(v.Password)), "\t| ")
+				} else {
+					fmt.Print(Bold(Red(v.Password)), "\t\t| ")
+				}
+			}
+
+			fmt.Println(v.Modified)
+		}
+
+		if displayPass {
+			time.Sleep(5 * time.Second)
+		}
+	} else {
+		fmt.Println(Red("No passwords to show"))
+
+		fmt.Println("Press any key to continue...")
+		bufio.NewReader(os.Stdin).ReadBytes('\n')
+	}
+}
+
 func showCards(cards map[int]cardsData, displayCCV bool) bool {
 	var foundAnyCards bool
 
