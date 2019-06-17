@@ -55,7 +55,7 @@ func showPasswords(passwords map[int]passwordsData, displayPass bool) bool {
 			time.Sleep(5 * time.Second)
 		}
 	} else {
-		fmt.Println(Red("No passwords to show"))
+		fmt.Println(Red("No OWN passwords to show"))
 
 		foundAnyPasswords = false
 
@@ -107,7 +107,7 @@ func showSharedPasswords(passwords []passwordsData, displayPass bool) {
 			time.Sleep(5 * time.Second)
 		}
 	} else {
-		fmt.Println(Red("No shared passwords to show"))
+		fmt.Println(Red("No SHARED passwords to show"))
 
 		fmt.Println("Press any key to continue...")
 		bufio.NewReader(os.Stdin).ReadBytes('\n')

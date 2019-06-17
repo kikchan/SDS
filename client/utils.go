@@ -62,20 +62,7 @@ func generateAESkey() []byte {
 	return key
 }
 
-//Decrypts the given data using the key
-func decrypt(text, key []byte) (data []byte) {
-	block, _ := aes.NewCipher(key)
-	iv := text[:aes.BlockSize]
-	text = text[aes.BlockSize:]
-	cfb := cipher.NewCFBDecrypter(block, iv)
-	cfb.XORKeyStream(text, text)
-	data, _ = base64.StdEncoding.DecodeString(string(text))
-
-	return
-}
-
-// TESTING !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-func decrypt2(data, key []byte) (out []byte) {
+func decrypt(data, key []byte) (out []byte) {
 	out = make([]byte, len(data)-16)
 	blk, err := aes.NewCipher(key)
 	chk(err)
@@ -83,8 +70,6 @@ func decrypt2(data, key []byte) (out []byte) {
 	ctr.XORKeyStream(out, data[16:])
 	return
 }
-
-// END TESTING !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 //Compress the given data
 func compress(data []byte) []byte {
@@ -204,7 +189,7 @@ func decryptResponseToArrayOfPasswords(body []byte, m *resp, pKey string) []pass
 
 			//Get the user's private key using the second half of his login password (keyData)
 			var privateKey rsa.PrivateKey
-			err := json.Unmarshal(decompress(decrypt2(decode64(pKey), keyData)), &privateKey)
+			err := json.Unmarshal(decompress(decrypt(decode64(pKey), keyData)), &privateKey)
 			chk(err)
 
 			//Get the password's AES key that's going to be used to decrypt it
@@ -213,7 +198,7 @@ func decryptResponseToArrayOfPasswords(body []byte, m *resp, pKey string) []pass
 
 			//Decrypt and parse to a struct the password
 			var pd passwordsData
-			err = json.Unmarshal(decrypt2(decode64(passStruct[0]), AESkey), &pd)
+			err = json.Unmarshal(decrypt(decode64(passStruct[0]), AESkey), &pd)
 
 			//Insert the password into the array
 			passwords = append(passwords, pd)
