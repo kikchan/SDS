@@ -3,7 +3,6 @@ package main
 import (
 	"database/sql"
 	"math/rand"
-	"strconv"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -693,10 +692,9 @@ func getSharedFieldsForUser(user string, typeF string) (int, string, []field) {
 	   -3: The user doesn't exist
 	   -7: The field doesn't exist
 */
-func getSharedField(user string, typeF string, fieldID int) (int, string, field) {
+func sharedFieldExists(user, typeF, fieldID string) (int, string) {
 	var msg string
 	var code int
-	var field field
 	var correlation = rand.Intn(10000)
 
 	db, err := sql.Open("mysql", DB_Username+":"+DB_Password+"@"+DB_Protocol+"("+DB_IP+":"+DB_Port+")/"+DB_Name)
@@ -710,13 +708,12 @@ func getSharedField(user string, typeF string, fieldID int) (int, string, field)
 	code, msg, _ = findUser(user)
 
 	if code == 1 {
-		var query = "SELECT data, user_key FROM shares WHERE user='" + user + "' AND type='" + typeF +
-			"' AND fieldId=" + strconv.Itoa(fieldID) + ";"
+		var query = "SELECT * FROM shares WHERE user='" + user + "' AND type='" + typeF +
+			"' AND fieldId=" + fieldID + ";"
 
-		writeLog("getSharedField entry", user, correlation, query)
+		writeLog("sharedFieldExists entry", user, correlation, query)
 
 		read, err := db.Query(query)
-
 		if err != nil {
 			code = -2
 			msg = err.Error()
@@ -724,15 +721,8 @@ func getSharedField(user string, typeF string, fieldID int) (int, string, field)
 			defer read.Close()
 
 			if read.Next() {
-				var a, b string
-
-				err = read.Scan(&a, &b)
-
 				code = 1
-				msg = "The requested field was found"
-
-				field.Data = a
-				field.UserKey = b
+				msg = "The requested field is shared and it's going to be re-shared again"
 			} else {
 				code = -7
 				msg = "The field doesn't exist"
@@ -740,9 +730,9 @@ func getSharedField(user string, typeF string, fieldID int) (int, string, field)
 		}
 	}
 
-	writeLog("getSharedField out", user, correlation, msg)
+	writeLog("sharedFieldExists out", user, correlation, msg)
 
-	return code, msg, field
+	return code, msg
 }
 
 /*
@@ -755,7 +745,7 @@ func getSharedField(user string, typeF string, fieldID int) (int, string, field)
 	   -3: The user doesn't exist
 	   -7: The field doesn't exist
 */
-func updateShareField(user string, typeF string, fieldID int, data string) (int, string) {
+func updateSharedField(user, typeF, fieldID, data string) (int, string) {
 	var msg string
 	var code int
 	var correlation = rand.Intn(10000)
@@ -771,12 +761,12 @@ func updateShareField(user string, typeF string, fieldID int, data string) (int,
 	code, msg, _ = findUser(user)
 
 	if code == 1 {
-		code, msg, _ = getSharedField(user, typeF, fieldID)
+		code, msg = sharedFieldExists(user, typeF, fieldID)
 
 		if code == 1 {
-			var query = "UPDATE shares SET data='" + data + "' WHERE user='" + user + "' AND type='" + typeF + "' AND fieldId=" + strconv.Itoa(fieldID) + ";"
+			var query = "UPDATE shares SET data='" + data + "' WHERE user='" + user + "' AND type='" + typeF + "' AND fieldId=" + fieldID + ";"
 
-			writeLog("updateShareField entry", user, correlation, query)
+			writeLog("updateSharedField entry", user, correlation, query)
 
 			delete, err := db.Query(query)
 
@@ -792,59 +782,7 @@ func updateShareField(user string, typeF string, fieldID int, data string) (int,
 		}
 	}
 
-	writeLog("updateShareField out", user, correlation, msg)
-
-	return code, msg
-}
-
-/*
-	DELETES A SHARED FIELD.
-
-	Returns:
-		1: OK
-	   -1: Error connecting to database
-	   -2: Error executing query
-	   -3: The user doesn't exist
-	   -7: The field doesn't exist
-*/
-func deleteShareField(user string, typeF string, fieldID int) (int, string) {
-	var msg string
-	var code int
-	var correlation = rand.Intn(10000)
-
-	db, err := sql.Open("mysql", DB_Username+":"+DB_Password+"@"+DB_Protocol+"("+DB_IP+":"+DB_Port+")/"+DB_Name)
-	if err != nil {
-		code = -1
-		msg = err.Error()
-	}
-
-	defer db.Close()
-
-	code, msg, _ = findUser(user)
-
-	if code == 1 {
-		code, msg, _ = getSharedField(user, typeF, fieldID)
-
-		if code == 1 {
-			var query = "DELETE FROM shares WHERE user='" + user + "' AND type='" + typeF + "' AND fieldId=" + strconv.Itoa(fieldID) + ";"
-
-			writeLog("deleteShareField entry", user, correlation, query)
-
-			delete, err := db.Query(query)
-
-			if err != nil {
-				code = -2
-				msg = err.Error()
-			} else {
-				defer delete.Close()
-
-				code = 1
-				msg = "Field successfully deleted"
-			}
-		}
-	}
-
-	writeLog("deleteShareField entry", user, correlation, msg)
+	writeLog("updateSharedField out", user, correlation, msg)
 
 	return code, msg
 }

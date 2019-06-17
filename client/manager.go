@@ -165,6 +165,11 @@ func managePasswords(client *http.Client, username string) {
 				//Call the form to gather all password's data
 				pd := addPassword()
 
+				//Keep the same ID and AES
+				pass := passwords[index]
+				pd.ID = pass.ID
+				pd.AES = pass.AES
+
 				//Replace the desired password with the newly generated one
 				passwords[index] = pd
 
@@ -185,6 +190,44 @@ func managePasswords(client *http.Client, username string) {
 				body, _ := ioutil.ReadAll(r.Body)
 
 				processResponse(body, &m)
+
+				data.Set("cmd", "checkIfFieldExists")
+				data.Set("username", username)
+				data.Set("type", "pass")
+				data.Set("fieldID", strconv.Itoa(passwords[index].ID))
+
+				//Send the new data to the server so it can be stored
+				r, err = client.PostForm(Server, data)
+				chk(err)
+
+				//Read the body from the response
+				body, _ = ioutil.ReadAll(r.Body)
+
+				//If the current password is shared, modify it for the rest of the users
+				if processResponse(body, &m) == 1 {
+					//Convert the password into JSON object
+					passJSON, err := json.Marshal(passwords[index])
+					chk(err)
+
+					//Encrypt the field using the AES key
+					encryptedPassword := encrypt(passJSON, decode64(passwords[index].AES))
+
+					data.Set("cmd", "updateSharedField")
+					data.Set("username", username)
+					data.Set("type", "pass")
+					data.Set("fieldID", strconv.Itoa(passwords[index].ID))
+					data.Set("data", encode64(encryptedPassword))
+
+					//Send the data to the server so he can store it
+					r, err = client.PostForm(Server, data)
+					chk(err)
+
+					//Read the body from the response
+					body, _ = ioutil.ReadAll(r.Body)
+
+					//Read the response from the server
+					processResponse(body, &m)
+				}
 			} else {
 				invalidIndex("password")
 			}

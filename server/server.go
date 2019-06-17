@@ -258,6 +258,29 @@ func handler(w http.ResponseWriter, req *http.Request) {
 
 		return
 
+	case "checkIfFieldExists":
+		username := req.Form.Get("username")
+		typeF := req.Form.Get("type")
+		fieldID := req.Form.Get("fieldID")
+
+		//Queries the database to check if the field is shared
+		code, msg := sharedFieldExists(username, typeF, fieldID)
+
+		response(w, code, msg)
+
+		return
+
+	case "updateSharedField":
+		username := req.Form.Get("username")
+		typeF := req.Form.Get("type")
+		fieldID := req.Form.Get("fieldID")
+		data := req.Form.Get("data")
+
+		//Updates the shared field in the database
+		code, msg := updateSharedField(username, typeF, fieldID, data)
+
+		response(w, code, msg)
+
 	case "open":
 		response(w, 1, "Connection established!")
 

@@ -121,7 +121,7 @@ func coloredMenu(title string) {
 }
 
 //Receives the response's body then parses it to JSON and checks the returned Code from the server
-func processResponse(body []byte, m *resp) {
+func processResponse(body []byte, m *resp) int {
 	//Creates a new JSON decoder
 	dec := json.NewDecoder(strings.NewReader(string(body)))
 
@@ -138,6 +138,8 @@ func processResponse(body []byte, m *resp) {
 
 	fmt.Print("Press any key to continue...")
 	bufio.NewReader(os.Stdin).ReadBytes('\n')
+
+	return m.Code
 }
 
 //Receives the response's body then parses it to JSON then returns it as an array
