@@ -7,9 +7,9 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
+	"crypto/rsa"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -75,82 +75,13 @@ func decrypt(text, key []byte) (data []byte) {
 }
 
 // TESTING !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-func addBase64Padding(value string) string {
-	m := len(value) % 4
-	if m != 0 {
-		value += strings.Repeat("=", 4-m)
-	}
-
-	return value
-}
-
-func removeBase64Padding(value string) string {
-	return strings.Replace(value, "=", "", -1)
-}
-
-func Pad(src []byte) []byte {
-	padding := aes.BlockSize - len(src)%aes.BlockSize
-	padtext := bytes.Repeat([]byte{byte(padding)}, padding)
-	return append(src, padtext...)
-}
-
-func Unpad(src []byte) ([]byte, error) {
-	length := len(src)
-	unpadding := int(src[length-1])
-
-	if unpadding > length {
-		return nil, errors.New("unpad error. This could happen when incorrect encryption key is used")
-	}
-
-	return src[:(length - unpadding)], nil
-}
-
-func encrypt2(key []byte, text string) (string, error) {
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return "", err
-	}
-
-	msg := Pad([]byte(text))
-	ciphertext := make([]byte, aes.BlockSize+len(msg))
-	iv := ciphertext[:aes.BlockSize]
-	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
-		return "", err
-	}
-
-	cfb := cipher.NewCFBEncrypter(block, iv)
-	cfb.XORKeyStream(ciphertext[aes.BlockSize:], []byte(msg))
-	finalMsg := removeBase64Padding(base64.URLEncoding.EncodeToString(ciphertext))
-	return finalMsg, nil
-}
-
-func decrypt2(key []byte, text string) (string, error) {
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return "", err
-	}
-
-	decodedMsg, err := base64.URLEncoding.DecodeString(addBase64Padding(text))
-	if err != nil {
-		return "", err
-	}
-
-	if (len(decodedMsg) % aes.BlockSize) != 0 {
-		return "", errors.New("blocksize must be multipe of decoded message length")
-	}
-
-	iv := decodedMsg[:aes.BlockSize]
-	msg := decodedMsg[aes.BlockSize:]
-
-	cfb := cipher.NewCFBDecrypter(block, iv)
-	cfb.XORKeyStream(msg, msg)
-
-	unpadMsg, err := Unpad(msg)
-	if err != nil {
-		return "", err
-	}
-
-	return string(unpadMsg), nil
+func decrypt2(data, key []byte) (out []byte) {
+	out = make([]byte, len(data)-16)
+	blk, err := aes.NewCipher(key)
+	chk(err)
+	ctr := cipher.NewCTR(blk, data[:16])
+	ctr.XORKeyStream(out, data[16:])
+	return
 }
 
 // END TESTING !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -256,7 +187,7 @@ func convertResponseToArrayOfUsers(body []byte, m *resp) []user {
 func decryptResponseToArrayOfPasswords(body []byte, m *resp, pKey string) []passwordsData {
 	//A struct to []byte encoder/decoder
 	//var network bytes.Buffer
-	//dec := gob.NewDecoder(&network)
+	//dec2 := gob.NewDecoder(&network)
 
 	//Creates a new JSON decoder
 	dec := json.NewDecoder(strings.NewReader(string(body)))
@@ -273,40 +204,22 @@ func decryptResponseToArrayOfPasswords(body []byte, m *resp, pKey string) []pass
 	for i := range arrayOfPasswords {
 		//Each password's data gets splitted in another array of 2 columns
 		passStruct := strings.Split(arrayOfPasswords[i], "##")
-		passStruct[0] = "1"
 
-		//ALGO PETA DENTRO DEL FOR PORQUE NO DEVUELVE BIEN EL ARRAY, a partir de esta línea
+		//Get the user's private key using the second half of his login password (keyData)
+		var privateKey rsa.PrivateKey
+		err := json.Unmarshal(decompress(decrypt2(decode64(pKey), keyData)), &privateKey)
+		chk(err)
 
-		//To do on other side
-		//var privateKey rsa.PrivateKey
-		//err := json.Unmarshal(decompress(decrypt(decode64(pKey), keyData)), &privateKey)
-		//chk(err)
+		//Get the password's AES key that's going to be used to decrypt it
+		AESkey, err := rsa.DecryptPKCS1v15(rand.Reader, &privateKey, decode64(passStruct[1]))
+		chk(err)
 
-		fmt.Println("La línea de abajo es vacía, esto provoca que el decompress pete")
-		fmt.Println(decrypt(decode64(pKey), keyData))
+		//Decrypt and parse to a struct the password
+		var pd passwordsData
+		err = json.Unmarshal(decrypt2(decode64(passStruct[0]), AESkey), &pd)
 
-		fmt.Println("Resultado tras desencriptar con el segundo método (decrypt2)")
-		fmt.Println(decrypt2(keyData, pKey))
-
-		fmt.Println("pKey:")
-		fmt.Println(pKey)
-
-		fmt.Println("keyData:")
-		fmt.Println(encode64(keyData))
-
-		//AESkey, err := rsa.DecryptPKCS1v15(rand.Reader, &privateKey, decode64(passStruct[1]))
-		//chk(err)
-
-		//fmt.Println(encode64(AESkey))
-		//time.Sleep(5 * time.Second)
-
-		//A PARTIR DE AQUÍ HAY QUE USAR LA CLAVE AES PARA DESCIFRAR LA CADENA passStruct[0]
-
-		//var pd passwordsData
-		//chk(dec.Decode(&pd))
-		//fmt.Println(pd)
-
-		//passwords = append(passwords, pd)
+		//Insert the password into the array
+		passwords = append(passwords, pd)
 	}
 
 	return passwords

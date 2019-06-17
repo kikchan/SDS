@@ -1,10 +1,8 @@
 package main
 
 import (
-	"bytes"
 	"crypto/rand"
 	"crypto/rsa"
-	"encoding/gob"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -231,16 +229,12 @@ func managePasswords(client *http.Client, username string) {
 	case 5: //Share a password
 		clearScreen()
 
-		//A struct to []byte encoder/decoder
-		var network bytes.Buffer
-		enc := gob.NewEncoder(&network)
-
 		if showPasswords(passwords, false) {
 			fmt.Print("\n\nWhich password do you want to share?: ")
-			var selectedField int
-			fmt.Scanf("%d", &selectedField)
+			var selectedPassword int
+			fmt.Scanf("%d", &selectedPassword)
 
-			if passwordIndexExists(selectedField, passwords) {
+			if passwordIndexExists(selectedPassword, passwords) {
 				data.Set("cmd", "showAvailableUsers")
 				data.Set("username", username)
 
@@ -257,12 +251,12 @@ func managePasswords(client *http.Client, username string) {
 				//List all the users and ask which one will get the shared data
 				selectedUser := listUsers(users)
 
-				//Convert the password struct to []byte
-				err = enc.Encode(passwords[selectedField])
+				//Convert the password into JSON object
+				passJSON, err := json.Marshal(passwords[selectedPassword])
 				chk(err)
 
 				//Encrypt the field using the AES key
-				encryptedField := encrypt(network.Bytes(), decode64(passwords[selectedField].AES))
+				encryptedPassword := encrypt(passJSON, decode64(passwords[selectedPassword].AES))
 
 				//Convert the selected user's public key to rsa.PublicKey type
 				var publicKey rsa.PublicKey
@@ -270,14 +264,14 @@ func managePasswords(client *http.Client, username string) {
 				chk(err)
 
 				//Encrypt the AES key using the user's public key
-				encryptedAESkey, err := rsa.EncryptPKCS1v15(rand.Reader, &publicKey, decode64(passwords[selectedField].AES))
+				encryptedAESkey, err := rsa.EncryptPKCS1v15(rand.Reader, &publicKey, decode64(passwords[selectedPassword].AES))
 				chk(err)
 
 				data.Set("cmd", "shareField")
 				data.Set("username", username)
 				data.Set("type", "pass")
-				data.Set("field", strconv.Itoa(passwords[selectedField].ID))
-				data.Set("data", encode64(encryptedField))
+				data.Set("field", strconv.Itoa(passwords[selectedPassword].ID))
+				data.Set("data", encode64(encryptedPassword))
 				data.Set("userTarget", users[selectedUser].Username)
 				data.Set("userKey", encode64(encryptedAESkey))
 
