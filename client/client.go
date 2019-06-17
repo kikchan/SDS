@@ -23,6 +23,8 @@ var ServerIP = "https://localhost"
 var ServerPort = "8080"
 var Server = ServerIP + ":" + ServerPort
 
+var keyData []byte
+
 func main() {
 	clearScreen()
 
@@ -121,6 +123,9 @@ func publicMenu(client *http.Client) {
 
 			//Half of the password is used for the login (256 bits)
 			keyLogin := keyClient[:32]
+
+			//Store the second half of the password
+			keyData = keyClient[32:64]
 
 			//Set the "login" command
 			data.Set("cmd", "login")
