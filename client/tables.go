@@ -69,7 +69,7 @@ func showPasswords(passwords map[int]passwordsData, displayPass bool) bool {
 func showSharedPasswords(passwords []passwordsData, displayPass bool) {
 	if len(passwords) > 0 {
 		if displayPass {
-			fmt.Print(Bold(Red("Showing SHARED passwords for")), Underline(Bold(White("5 seconds!"))), "\n\n")
+			fmt.Print(Bold(Red("\n\nShowing SHARED passwords for")), Underline(Bold(White("5 seconds!"))), "\n\n")
 			fmt.Println(" #\t | Site\t\t| Username\t| Password\t| Last modified")
 			fmt.Println("-----------------------------------------------------------------------------")
 		} else {

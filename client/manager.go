@@ -147,7 +147,9 @@ func managePasswords(client *http.Client, username string) {
 		//Convert the response to an array of passwords
 		fields := decryptResponseToArrayOfPasswords(body, &m, user.PrivateKey)
 
-		showSharedPasswords(fields, true)
+		if len(fields) > 0 {
+			showSharedPasswords(fields, true)
+		}
 
 		return
 

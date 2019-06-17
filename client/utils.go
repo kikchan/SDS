@@ -185,10 +185,6 @@ func convertResponseToArrayOfUsers(body []byte, m *resp) []user {
 
 //Receives the response's body then parses it to JSON then returns it as an array
 func decryptResponseToArrayOfPasswords(body []byte, m *resp, pKey string) []passwordsData {
-	//A struct to []byte encoder/decoder
-	//var network bytes.Buffer
-	//dec2 := gob.NewDecoder(&network)
-
 	//Creates a new JSON decoder
 	dec := json.NewDecoder(strings.NewReader(string(body)))
 
@@ -198,28 +194,30 @@ func decryptResponseToArrayOfPasswords(body []byte, m *resp, pKey string) []pass
 	//Array of passwords
 	var passwords []passwordsData
 
-	//Array of passwords splitted
-	arrayOfPasswords := strings.Split(m.Msg, "###")
+	if m.Code == 1 {
+		//Array of passwords splitted
+		arrayOfPasswords := strings.Split(m.Msg, "###")
 
-	for i := range arrayOfPasswords {
-		//Each password's data gets splitted in another array of 2 columns
-		passStruct := strings.Split(arrayOfPasswords[i], "##")
+		for i := range arrayOfPasswords {
+			//Each password's data gets splitted in another array of 2 columns
+			passStruct := strings.Split(arrayOfPasswords[i], "##")
 
-		//Get the user's private key using the second half of his login password (keyData)
-		var privateKey rsa.PrivateKey
-		err := json.Unmarshal(decompress(decrypt2(decode64(pKey), keyData)), &privateKey)
-		chk(err)
+			//Get the user's private key using the second half of his login password (keyData)
+			var privateKey rsa.PrivateKey
+			err := json.Unmarshal(decompress(decrypt2(decode64(pKey), keyData)), &privateKey)
+			chk(err)
 
-		//Get the password's AES key that's going to be used to decrypt it
-		AESkey, err := rsa.DecryptPKCS1v15(rand.Reader, &privateKey, decode64(passStruct[1]))
-		chk(err)
+			//Get the password's AES key that's going to be used to decrypt it
+			AESkey, err := rsa.DecryptPKCS1v15(rand.Reader, &privateKey, decode64(passStruct[1]))
+			chk(err)
 
-		//Decrypt and parse to a struct the password
-		var pd passwordsData
-		err = json.Unmarshal(decrypt2(decode64(passStruct[0]), AESkey), &pd)
+			//Decrypt and parse to a struct the password
+			var pd passwordsData
+			err = json.Unmarshal(decrypt2(decode64(passStruct[0]), AESkey), &pd)
 
-		//Insert the password into the array
-		passwords = append(passwords, pd)
+			//Insert the password into the array
+			passwords = append(passwords, pd)
+		}
 	}
 
 	return passwords
