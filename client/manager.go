@@ -267,6 +267,7 @@ func managePasswords(client *http.Client, username string) {
 				//Convert the selected user's public key to rsa.PublicKey type
 				var publicKey rsa.PublicKey
 				err = json.Unmarshal(uncompress(decode64(users[selectedUser].PubKey)), &publicKey)
+				chk(err)
 
 				//Encrypt the AES key using the user's public key
 				encryptedAESkey, err := rsa.EncryptPKCS1v15(rand.Reader, &publicKey, decode64(passwords[selectedField].AES))

@@ -192,26 +192,32 @@ func decryptResponseToArrayOfPasswords(body []byte, m *resp, pKey string) []pass
 	for i := range arrayOfPasswords {
 		//Each password's data gets splitted in another array of 2 columns
 		passStruct := strings.Split(arrayOfPasswords[i], "##")
+		fmt.Println(passStruct[0])
+		fmt.Println("-------------------------")
+		fmt.Println(passStruct[1])
 
-		//ALGO PETA DENTRO DEL FOR PORQUE NO DEVUELVE BIEN EL ARRAY
+		//ALGO PETA DENTRO DEL FOR PORQUE NO DEVUELVE BIEN EL ARRAY, a partir de esta línea
 
 		//To do on other side
 		var privateKey rsa.PrivateKey
-
-		err := json.Unmarshal(uncompress(decode64(pKey)), &privateKey)
+		err := json.Unmarshal(decode64(pKey), &privateKey)
 		chk(err)
 
-		AESkey, err := rsa.DecryptPKCS1v15(rand.Reader, &privateKey, decode64(passStruct[0]))
-		chk(err)
+		fmt.Println(privateKey)
 
-		fmt.Println(AESkey)
-		time.Sleep(5 * time.Minute)
+		/*
+			AESkey, err := rsa.DecryptPKCS1v15(rand.Reader, &privateKey, decode64(passStruct[1]))
+			chk(err)
 
-		var pd passwordsData
-		chk(dec.Decode(&pd))
-		fmt.Println(pd)
+			fmt.Println(encode64(AESkey))
+			time.Sleep(5 * time.Minute)
 
-		passwords = append(passwords, pd)
+			//var pd passwordsData
+			//chk(dec.Decode(&pd))
+			//fmt.Println(pd)
+
+			//passwords = append(passwords, pd)
+		*/
 	}
 
 	return passwords
